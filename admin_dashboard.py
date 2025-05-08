@@ -5,14 +5,55 @@ import socket
 import threading
 import pickle
 import os
+import configparser
 from datetime import datetime, timedelta
 
 # Server settings
 HOST = "0.0.0.0"  # Listen on all interfaces
 PORT = 9095
 
+
+
+# Load client IPs from config.ini
+CONFIG_FILE = "config.ini"
+
+def load_client_ips():
+    config = configparser.ConfigParser()
+    if not os.path.exists(CONFIG_FILE):
+        return {}
+    config.read(CONFIG_FILE)
+    return dict(config.items("Clients"))
+
+def save_client_ip(name, ip):
+    config = configparser.ConfigParser()
+    if os.path.exists(CONFIG_FILE):
+        config.read(CONFIG_FILE)
+    if "Clients" not in config:
+        config["Clients"] = {}
+    config["Clients"][name] = ip
+    with open(CONFIG_FILE, "w") as f:
+        config.write(f)
+
+# Update handle_client to save IPs and update GUI
+def handle_client(self, client_socket, client_address):
+    client_name = f"PC-{len(clients) + 1}"
+    clients[client_address] = {"name": client_name, "status": "Idle", "time_left": 0}
+    save_client_ip(client_name, client_address[0])
+    self.pc_list.insert(tk.END, client_name)
+    try:
+        while True:
+            data = client_socket.recv(1024).decode()
+            if data:
+                print(f"Received from {client_address}: {data}")
+    except ConnectionResetError:
+        print(f"Client {client_address} disconnected")
+        self.pc_list.delete(0, tk.END)
+        for client in clients.values():
+            self.pc_list.insert(tk.END, client["name"])
+    finally:
+        client_socket.close()
 # Global variables
-clients = {}  # {client_address: {"name": "PC-1", "status": "Idle", "time_left": 0}}
+clients = load_client_ips() # {client_address: {"name": "PC-1", "status": "Idle", "time_left": 0}}
 
 # Save schedules to a file
 SCHEDULE_FILE = "schedules.pkl"

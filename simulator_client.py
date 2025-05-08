@@ -7,7 +7,7 @@ import time
 from datetime import datetime, timedelta
 
 # Server settings
-SERVER_HOST = "192.168.1.100"  # Replace with Admin Dashboard's IP
+SERVER_HOST = "192.168.18.84"  # Replace with Admin Dashboard's IP
 SERVER_PORT = 9095
 
 # Global variables
@@ -16,11 +16,16 @@ time_left = 0
 
 # Connect to the server
 def connect_to_server():
-    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client.connect((SERVER_HOST, SERVER_PORT))
-    print("Connected to server")
-    threading.Thread(target=listen_to_server, args=(client,), daemon=True).start()
-    return client
+    while True:
+        try:
+            client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            client.connect((SERVER_HOST, SERVER_PORT))
+            print("Connected to server")
+            threading.Thread(target=listen_to_server, args=(client,), daemon=True).start()
+            return client
+        except (ConnectionRefusedError, OSError):
+            print("Server unavailable, retrying...")
+            time.sleep(5)  # Retry after 5 seconds
 
 def listen_to_server(client):
     global session_active, time_left
