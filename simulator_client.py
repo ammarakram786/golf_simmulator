@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 # Server settings
 SERVER_HOST = "192.168.1.100"  # Replace with Admin Dashboard's IP
-SERVER_PORT = 12345
+SERVER_PORT = 9095
 
 # Global variables
 session_active = False

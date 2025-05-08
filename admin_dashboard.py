@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 
 # Server settings
 HOST = "0.0.0.0"  # Listen on all interfaces
-PORT = 12345
+PORT = 9095
 
 # Global variables
 clients = {}  # {client_address: {"name": "PC-1", "status": "Idle", "time_left": 0}}
