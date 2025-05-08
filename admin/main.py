@@ -1,7 +1,7 @@
-import tkinter as tk
 from ttkbootstrap import Style
-from ui import AdminDashboard
-from network import AdminServer
+
+from server import AdminServer
+from dashboard import AdminDashboard
 
 style = Style('superhero')
 root = style.master
