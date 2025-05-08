@@ -3,6 +3,7 @@ import time
 import threading
 import os
 import sys
+import ctypes
 
 # Server settings
 SERVER_HOST = "127.0.0.1"  # Change to server IP when testing on different machines
@@ -32,6 +33,36 @@ class GolfSimulatorClient:
             self.socket = None
             return False
 
+    def lock_windows_screen(self):
+        """Lock Windows screen using Win+L shortcut"""
+        if sys.platform == 'win32':
+            try:
+                # Method 1: Using ctypes to call Windows API
+                user32 = ctypes.WinDLL('user32')
+                user32.LockWorkStation()
+                print("Screen locked using Windows API")
+                return
+            except Exception as e:
+                print(f"Failed to lock using Windows API: {e}")
+                
+            try:
+                # Method 2: Using keyboard library as fallback
+                import keyboard
+                keyboard.send('windows+l')
+                print("Screen locked using keyboard simulation")
+                return
+            except Exception as e:
+                print(f"Failed to lock using keyboard simulation: {e}")
+                
+            try:
+                # Method 3: Using os.system as last resort
+                os.system('rundll32.exe user32.dll,LockWorkStation')
+                print("Screen locked using rundll32")
+            except Exception as e:
+                print(f"Failed to lock using rundll32: {e}")
+        else:
+            print("Screen locking is only supported on Windows")
+
     def handle_server_messages(self):
         """Handle messages from the server"""
         while self.running and self.connected:
@@ -54,7 +85,8 @@ class GolfSimulatorClient:
                 
                 elif data == "LOCK_SCREEN":
                     print("Locking screen...")
-                    # Add code to lock the screen
+                    # Simply lock Windows screen
+                    self.lock_windows_screen()
                 
             except Exception as e:
                 print(f"Error receiving data: {e}")
