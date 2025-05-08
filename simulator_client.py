@@ -1,74 +1,125 @@
-# simulator_client.py
 import socket
-import threading
-import tkinter as tk
-import os
 import time
-from datetime import datetime, timedelta
+import threading
+import os
+import sys
 
 # Server settings
-SERVER_HOST = "192.168.18.84"  # Replace with Admin Dashboard's IP
+SERVER_HOST = "127.0.0.1"  # Change to server IP when testing on different machines
 SERVER_PORT = 9095
 
-# Global variables
-session_active = False
-time_left = 0
+# Reconnection settings
+RECONNECT_INTERVAL = 5  # seconds
 
-# Connect to the server
-def connect_to_server():
-    while True:
+class GolfSimulatorClient:
+    def __init__(self):
+        self.socket = None
+        self.connected = False
+        self.running = True
+        self.reconnect_thread = None
+
+    def connect_to_server(self):
+        """Connect to the admin server"""
         try:
-            client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            client.connect((SERVER_HOST, SERVER_PORT))
-            print("Connected to server")
-            threading.Thread(target=listen_to_server, args=(client,), daemon=True).start()
-            return client
-        except (ConnectionRefusedError, OSError):
-            print("Server unavailable, retrying...")
-            time.sleep(5)  # Retry after 5 seconds
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.socket.connect((SERVER_HOST, SERVER_PORT))
+            self.connected = True
+            print(f"Connected to server at {SERVER_HOST}:{SERVER_PORT}")
+            return True
+        except Exception as e:
+            print(f"Failed to connect: {e}")
+            self.connected = False
+            self.socket = None
+            return False
 
-def listen_to_server(client):
-    global session_active, time_left
-    try:
-        while True:
-            data = client.recv(1024).decode()
-            if data:
+    def handle_server_messages(self):
+        """Handle messages from the server"""
+        while self.running and self.connected:
+            try:
+                data = self.socket.recv(1024).decode()
+                if not data:
+                    print("Server closed connection")
+                    break
+                
                 print(f"Received from server: {data}")
+                
                 # Handle commands from server
-    except ConnectionResetError:
-        print("Disconnected from server")
-    finally:
-        client.close()
+                if data == "START_SESSION":
+                    print("Starting session...")
+                    # Add code to start your application
+                
+                elif data == "END_SESSION":
+                    print("Ending session...")
+                    # Add code to close your application
+                
+                elif data == "LOCK_SCREEN":
+                    print("Locking screen...")
+                    # Add code to lock the screen
+                
+            except Exception as e:
+                print(f"Error receiving data: {e}")
+                break
+        
+        # If we exit the loop, we're disconnected
+        self.connected = False
+        if self.socket:
+            try:
+                self.socket.close()
+            except:
+                pass
+        self.socket = None
+        
+        # Start reconnection if we're still running
+        if self.running and not self.reconnect_thread:
+            self.reconnect_thread = threading.Thread(target=self.reconnect_loop)
+            self.reconnect_thread.daemon = True
+            self.reconnect_thread.start()
 
-# GUI for countdown timer
-class CountdownApp:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Simulator Timer")
-        self.label = tk.Label(root, text="Waiting for session...", font=("Arial", 24))
-        self.label.pack(pady=20)
+    def reconnect_loop(self):
+        """Try to reconnect to server periodically"""
+        while self.running and not self.connected:
+            print(f"Attempting to reconnect in {RECONNECT_INTERVAL} seconds...")
+            time.sleep(RECONNECT_INTERVAL)
+            
+            if self.connect_to_server():
+                # Start handling messages again
+                message_thread = threading.Thread(target=self.handle_server_messages)
+                message_thread.daemon = True
+                message_thread.start()
+                break
+        
+        self.reconnect_thread = None
 
-        # Update timer every second
-        self.update_timer()
+    def start(self):
+        """Start the client"""
+        if self.connect_to_server():
+            message_thread = threading.Thread(target=self.handle_server_messages)
+            message_thread.daemon = True
+            message_thread.start()
+        else:
+            # Start reconnection loop
+            self.reconnect_thread = threading.Thread(target=self.reconnect_loop)
+            self.reconnect_thread.daemon = True
+            self.reconnect_thread.start()
+    
+    def stop(self):
+        """Stop the client"""
+        self.running = False
+        if self.socket:
+            try:
+                self.socket.close()
+            except:
+                pass
 
-    def update_timer(self):
-        global session_active, time_left
-        if session_active:
-            if time_left > 0:
-                self.label.config(text=f"Time Left: {time_left} seconds")
-                time_left -= 1
-            else:
-                self.label.config(text="Time's Up!")
-                session_active = False
-                lock_workstation()
-        self.root.after(1000, self.update_timer)
-
-def lock_workstation():
-    os.system("rundll32.exe user32.dll,LockWorkStation")
-
-# Run the Simulator Client
+# Run client
 if __name__ == "__main__":
-    client_socket = connect_to_server()
-    root = tk.Tk()
-    app = CountdownApp(root)
-    root.mainloop()
+    client = GolfSimulatorClient()
+    client.start()
+    
+    try:
+        # Keep main thread running
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("Shutting down client...")
+        client.stop()
