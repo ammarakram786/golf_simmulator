@@ -31,7 +31,7 @@ class AdminDashboard(Frame):
         if addr in self.cards:
             # Update existing client card
             card = self.cards[addr]
-            card.update_status("Idle", connected=True)
+            card.update_status("IDLE", connected=True)
         else:
             # Add new client card
             card = ClientCard(self, info['name'], info['ip'], sock, self.server)

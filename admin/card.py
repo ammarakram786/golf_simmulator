@@ -18,7 +18,7 @@ class ClientCard(Frame):
         Label(self, text=f"IP: {ip}").pack(anchor='w')
 
         # Status label on the right
-        self.status = Label(self, text="Idle", style="Red.TLabel", anchor='e')
+        self.status = Label(self, text="IDLE", style="Red.TLabel", anchor='e')
         self.status.pack(anchor='e', padx=10)
 
         # Buttons for actions
@@ -29,11 +29,11 @@ class ClientCard(Frame):
         Button(self, text="End", command=self.end_session).pack(side='left', padx=5)
         Button(self, text="Lock", command=self.lock_now).pack(side='left', padx=5)
 
-        self.update_status("Idle", connected=True)
+        self.update_status("IDLE", connected=True)
 
     def update_status(self, status, connected):
         if connected:
-            style = "Green.TLabel" if status == "Active" else "Red.TLabel"
+            style = "Green.TLabel" if status == "ACTIVE" else "Red.TLabel"
         else:
             style = "Red.TLabel"
         self.status.config(text=status, style=style)
@@ -57,11 +57,11 @@ class ClientCard(Frame):
 
     def start_session(self, minutes):
         self.server.send_command(self.sock, {"cmd": "start", "minutes": minutes})
-        self.update_status("Active", connected=True)
+        self.update_status("ACTIVE", connected=True)
 
     def end_session(self):
         self.server.send_command(self.sock, {"cmd": "end"})
-        self.update_status("Idle", connected=True)
+        self.update_status("IDLE", connected=True)
 
     def lock_now(self):
         self.server.send_command(self.sock, {"cmd": "lock"})
