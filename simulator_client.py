@@ -3,7 +3,7 @@ import time
 import threading
 import os
 import sys
-import ctypes
+import platform
 
 # Server settings
 SERVER_HOST = "127.0.0.1"  # Change to server IP when testing on different machines
@@ -18,14 +18,30 @@ class GolfSimulatorClient:
         self.connected = False
         self.running = True
         self.reconnect_thread = None
+        self.computer_name = self.get_computer_name()
+
+    def get_computer_name(self):
+        """Get the computer's name"""
+        try:
+            return platform.node()
+        except:
+            # Fallback methods if platform.node() fails
+            try:
+                return os.environ.get('COMPUTERNAME', 'Unknown')
+            except:
+                return "Unknown-PC"
 
     def connect_to_server(self):
         """Connect to the admin server"""
         try:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.connect((SERVER_HOST, SERVER_PORT))
+            
+            # Send computer name to server immediately after connecting
+            self.socket.send(self.computer_name.encode())
+            
             self.connected = True
-            print(f"Connected to server at {SERVER_HOST}:{SERVER_PORT}")
+            print(f"Connected to server at {SERVER_HOST}:{SERVER_PORT} as {self.computer_name}")
             return True
         except Exception as e:
             print(f"Failed to connect: {e}")
@@ -46,16 +62,7 @@ class GolfSimulatorClient:
                 print(f"Failed to lock using Windows API: {e}")
                 
             try:
-                # Method 2: Using keyboard library as fallback
-                import keyboard
-                keyboard.send('windows+l')
-                print("Screen locked using keyboard simulation")
-                return
-            except Exception as e:
-                print(f"Failed to lock using keyboard simulation: {e}")
-                
-            try:
-                # Method 3: Using os.system as last resort
+                # Method 2: Using os.system as last resort
                 os.system('rundll32.exe user32.dll,LockWorkStation')
                 print("Screen locked using rundll32")
             except Exception as e:
@@ -145,6 +152,10 @@ class GolfSimulatorClient:
 
 # Run client
 if __name__ == "__main__":
+    # For ctypes
+    if sys.platform == 'win32':
+        import ctypes
+    
     client = GolfSimulatorClient()
     client.start()
     

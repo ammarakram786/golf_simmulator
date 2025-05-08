@@ -2,47 +2,15 @@
 import tkinter as tk
 from tkinter import messagebox
 import socket
-import threading
+import threading       
 import pickle
 import os
-import configparser
 import time
 from datetime import datetime, timedelta
 
 # Server settings
 HOST = "0.0.0.0"  # Listen on all interfaces
 PORT = 9095
-
-# Load client IPs from config.ini
-CONFIG_FILE = "config.ini"
-
-def load_client_ips():
-    config = configparser.ConfigParser()
-    if not os.path.exists(CONFIG_FILE):
-        # Create default config file with empty Clients section
-        config["Clients"] = {}
-        with open(CONFIG_FILE, "w") as f:
-            config.write(f)
-        return {}
-    
-    config.read(CONFIG_FILE)
-    if "Clients" not in config:
-        config["Clients"] = {}
-        with open(CONFIG_FILE, "w") as f:
-            config.write(f)
-        return {}
-    
-    return dict(config.items("Clients"))
-
-def save_client_ip(name, ip, status="Offline"):
-    config = configparser.ConfigParser()
-    if os.path.exists(CONFIG_FILE):
-        config.read(CONFIG_FILE)
-    if "Clients" not in config:
-        config["Clients"] = {}
-    config["Clients"][name] = f"{ip}|{status}"
-    with open(CONFIG_FILE, "w") as f:
-        config.write(f)
 
 # Global variables and locks
 clients_lock = threading.Lock()
@@ -99,37 +67,14 @@ class AdminDashboard:
         self.lock_btn = tk.Button(btn_frame, text="Lock Screen", command=self.lock_screen)
         self.lock_btn.pack(side=tk.LEFT, padx=5)
         
-        self.reconnect_btn = tk.Button(btn_frame, text="Reconnect All", command=self.reconnect_all_clients)
+        self.reconnect_btn = tk.Button(btn_frame, text="Refresh List", command=self.update_pc_list)
         self.reconnect_btn.pack(side=tk.LEFT, padx=5)
-
-        # Load existing clients from config
-        self.load_known_clients()
         
         # Start server thread
         threading.Thread(target=self.start_server, daemon=True).start()
         
         # Start update GUI thread
         threading.Thread(target=self.update_gui_periodically, daemon=True).start()
-
-    def load_known_clients(self):
-        """Load known clients from config.ini and display them in GUI"""
-        saved_clients = load_client_ips()
-        with clients_lock:
-            for name, ip_status in saved_clients.items():
-                parts = ip_status.split('|')
-                ip = parts[0]
-                status = parts[1] if len(parts) > 1 else "Offline"
-                
-                # Add to clients dictionary without socket
-                addr = (ip, 0)  # Placeholder port
-                clients[addr] = {
-                    "socket": None,
-                    "name": name,
-                    "status": status,
-                    "time_left": 0
-                }
-        
-        self.update_pc_list()
 
     def start_server(self):
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -158,6 +103,17 @@ class AdminDashboard:
         existing_client = None
         ip = client_address[0]
         
+        # Wait for client to send computer name
+        try:
+            # First message from client should be the computer name
+            client_hostname = client_socket.recv(1024).decode().strip()
+            if not client_hostname:
+                client_hostname = f"PC-{len(clients) + 1}"
+        except:
+            client_hostname = f"PC-{len(clients) + 1}"
+        
+        print(f"Client {ip} identified as {client_hostname}")
+        
         with clients_lock:
             # Check if this IP matches any known client
             for addr, client_data in clients.items():
@@ -169,20 +125,17 @@ class AdminDashboard:
             
             # If client is new, create entry
             if existing_client is None:
-                client_name = f"PC-{len(clients) + 1}"
                 clients[client_address] = {
                     "socket": client_socket,
-                    "name": client_name,
+                    "name": client_hostname,
                     "status": "Connected",
                     "time_left": 0
                 }
-                save_client_ip(client_name, ip, "Connected")
             else:
                 # Update existing client
                 existing_client["socket"] = client_socket
                 existing_client["status"] = "Connected"
                 clients[client_address] = existing_client
-                save_client_ip(existing_client["name"], ip, "Connected")
         
         self.update_pc_list()
         
@@ -201,8 +154,7 @@ class AdminDashboard:
             with clients_lock:
                 if client_address in clients:
                     clients[client_address]["socket"] = None
-                    clients[client_address]["status"] = "Offline"
-                    save_client_ip(clients[client_address]["name"], ip, "Offline")
+                    clients[client_address]["status"] = "Disconnected"
             
             self.update_pc_list()
             client_socket.close()
@@ -227,14 +179,6 @@ class AdminDashboard:
         while not self.stopped:
             self.update_pc_list()
             time.sleep(5)
-
-    def reconnect_all_clients(self):
-        """Try to reconnect to all offline clients"""
-        messagebox.showinfo("Reconnect", "Attempting to reconnect offline clients...")
-        
-        # Nothing to do here on server side - clients should attempt reconnection
-        # This just refreshes the GUI view
-        self.update_pc_list()
 
     def start_session(self):
         selected_index = self.get_selected_pc_index()
