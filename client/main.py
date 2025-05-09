@@ -6,7 +6,7 @@ config = configparser.ConfigParser()
 config.read('../config.ini')
 
 # Get Server IP and Port
-server_ip = config.get('Admin', 'ip')
+server_ip = config.get('Admin', 'server')
 server_port = config.getint('Admin', 'port')
 
 
