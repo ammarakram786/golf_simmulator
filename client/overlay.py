@@ -1,8 +1,6 @@
-import json
 import subprocess
 import threading
 import tkinter as tk
-from tkinter import messagebox
 from tkinter import ttk
 
 

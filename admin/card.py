@@ -36,7 +36,7 @@ class ClientCard(Frame):
         self.status.config(text=status, style=style)
 
     def ask_duration(self):
-        duration_win = Toplevel(self)
+        duration_win = Toplevel(self.name)
         duration_win.title("Select Session Duration")
         duration_win.geometry("250x200")
         var = IntVar(value=30)
@@ -67,7 +67,7 @@ class ClientCard(Frame):
         self.update_status("Disconnected", connected=False)
 
     def handle_extension_request(self, minutes):
-        request_win = Toplevel(self)
+        request_win = Toplevel(self.name)
         request_win.title(f"Extension Request from {self.name}")  # Add PC name to the title
         request_win.geometry("300x150")
 

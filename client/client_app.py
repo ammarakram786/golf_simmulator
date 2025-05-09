@@ -38,7 +38,8 @@ class ClientApp:
                         tk.messagebox.showinfo("Info", "Admin Accepted your extension request.")
                     else:
                         tk.messagebox.showinfo("Info", "Admin denied your extension request.")
-            except:
+            except Exception as e:
+                print("Error receiving data from server.", e)
                 break
 
     def run(self):
