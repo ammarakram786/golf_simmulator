@@ -2,10 +2,13 @@ import json
 import subprocess
 import threading
 import tkinter as tk
+from tkinter import messagebox
+from tkinter import ttk
 
 
 class SessionOverlay:
-    def __init__(self, root):
+    def __init__(self, root, app):
+        self.app = app
         self.extension_asked = False
         self.remaining = None
         self.root = root
@@ -51,25 +54,57 @@ class SessionOverlay:
         self.remaining -= 1
         self.win.after(1000, self.update_timer)
 
+
+
     def ask_extension(self):
         if hasattr(self, 'extension_asked') and self.extension_asked:
             return
         self.extension_asked = True
-        dlg = tk.Toplevel(self.root)
-        dlg.title("Extend Session")
-        tk.Label(dlg, text="Extend session by (minutes):").pack(pady=5)
-        entry = tk.Entry(dlg)
-        entry.pack(pady=5)
 
-        def request_extend():
-            try:
-                minutes = int(entry.get())
-                self.sock.send(json.dumps({"cmd": "extend_request", "minutes": minutes}).encode())
-                dlg.destroy()
-            except:
-                pass
+        extension_win = tk.Toplevel(self.root)
+        extension_win.title("Extend Session Duration")
+        extension_win.geometry("300x250")
+        extension_win.configure(bg="#f0f0f0")  # Light gray background
 
-        tk.Button(dlg, text="Request", command=request_extend).pack(pady=5)
+        # Title label
+        title_label = tk.Label(
+            extension_win,
+            text="Extend Your Session",
+            font=("Arial", 14, "bold"),
+            bg="#f0f0f0",
+            fg="#333"
+        )
+        title_label.pack(pady=10)
+
+        # Frame for radio buttons
+        options_frame = tk.Frame(extension_win, bg="#f0f0f0")
+        options_frame.pack(pady=10)
+
+        var = tk.IntVar(value=30)
+        options = [("6 minutes", 1), ("30 minutes", 30), ("1 hour", 60), ("1.5 hours", 90), ("2 hours", 120)]
+        for label, val in options:
+            tk.Radiobutton(
+                options_frame,
+                text=label,
+                variable=var,
+                value=val,
+                bg="#f0f0f0",
+                anchor="w"
+            ).pack(anchor='w', padx=10)
+
+        # Buttons
+        button_frame = tk.Frame(extension_win, bg="#f0f0f0")
+        button_frame.pack(pady=10)
+
+        def confirm():
+            minutes = var.get()
+            extension_win.destroy()
+            self.app.request_extension(minutes)
+        def close():
+            extension_win.destroy()
+
+        ttk.Button(button_frame, text="Confirm", command=confirm).pack(side="left", padx=5)
+        ttk.Button(button_frame, text="Cancel", command=close).pack(side="left", padx=5)
 
     def extend_session(self, minutes):
         self.remaining += minutes * 60

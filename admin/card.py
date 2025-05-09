@@ -22,9 +22,6 @@ class ClientCard(Frame):
         self.status.pack(anchor='e', padx=10)
 
         # Buttons for actions
-        # Button(self, text="Start Session", command=self.ask_duration).pack(side='left')
-        # Button(self, text="End", command=self.end_session).pack(side='left')
-        # Button(self, text="Lock", command=self.lock_now).pack(side='left')
         Button(self, text="Start Session", command=self.ask_duration).pack(side='left', padx=5)
         Button(self, text="End", command=self.end_session).pack(side='left', padx=5)
         Button(self, text="Lock", command=self.lock_now).pack(side='left', padx=5)
@@ -68,3 +65,21 @@ class ClientCard(Frame):
 
     def disconnect(self):
         self.update_status("Disconnected", connected=False)
+
+    def handle_extension_request(self, minutes):
+        request_win = Toplevel(self)
+        request_win.title(f"Extension Request from {self.name}")  # Add PC name to the title
+        request_win.geometry("300x150")
+
+        Label(request_win, text=f"Client {self.name} requests {minutes} minutes extension.").pack(pady=10)
+
+        def approve():
+            request_win.destroy()
+            self.server.send_command(self.sock, {"cmd": "extend","approved": True, "minutes": minutes})
+
+        def deny():
+            request_win.destroy()
+            self.server.send_command(self.sock, {"cmd": "extend","approved": True, "minutes": minutes})
+
+        Button(request_win, text="Approve", command=approve).pack(side="left", padx=10, pady=10)
+        Button(request_win, text="Deny", command=deny).pack(side="right", padx=10, pady=10)

@@ -1,34 +1,66 @@
 import tkinter as tk
-
-import socket, threading, platform, json, time, subprocess
+from tkinter import messagebox
+import socket
+import threading
+import platform
+import json
+import subprocess
 from overlay import SessionOverlay
 
-SERVER_IP = '127.0.0.1'  # Replace with actual admin IP
-PORT = 9999
+class ClientApp:
+    def __init__(self, server_ip, port):
+        self.server_ip = server_ip
+        self.port = port
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.overlay = None
+        self.root = None
 
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sock.connect((SERVER_IP, PORT))
+    def connect_to_server(self):
+        self.sock.connect((self.server_ip, self.port))
+        name = platform.node()
+        ip = socket.gethostbyname(socket.gethostname())
+        self.sock.send(json.dumps({"name": name, "ip": ip}).encode())
 
-name = platform.node()
-ip = socket.gethostbyname(socket.gethostname())
-sock.send(json.dumps({"name": name, "ip": ip}).encode())
+    def listen(self):
+        while True:
+            try:
+                msg = self.sock.recv(1024).decode()
+                data = json.loads(msg)
+                if data['cmd'] == 'start':
+                    self.overlay.start_session(data['minutes'])
+                elif data['cmd'] == 'end':
+                    self.overlay.end_session()
+                elif data['cmd'] == 'lock':
+                    subprocess.call("rundll32.exe user32.dll,LockWorkStation")
+                elif data['cmd'] == 'extend':
+                    if data.get('approved'):
+                        self.overlay.extend_session(data['minutes'])
+                        tk.messagebox.showinfo("Info", "Admin Accepted your extension request.")
+                    else:
+                        tk.messagebox.showinfo("Info", "Admin denied your extension request.")
+            except:
+                break
 
-root = tk.Tk()
-root.withdraw()
+    def run(self):
+        self.root = tk.Tk()
+        self.root.withdraw()
+        self.overlay = SessionOverlay(self.root, self)  # Pass the app instance
 
-overlay = SessionOverlay(root)
+        self.connect_to_server()
+
+        threading.Thread(target=self.listen, daemon=True).start()
+        self.root.mainloop()
+
+    def request_extension(self, minutes):
+        try:
+            self.sock.send(json.dumps({"cmd": "extend_request", "minutes": minutes}).encode())
+        except Exception as e:
+            print(f"Error requesting extension: {e}")
 
 
-def listen():
-    while True:
-        msg = sock.recv(1024).decode()
-        data = json.loads(msg)
-        if data['cmd'] == 'start':
-            overlay.start_session(data['minutes'])
-        elif data['cmd'] == 'end':
-            overlay.end_session()
-        elif data['cmd'] == 'lock':
-            subprocess.call("rundll32.exe user32.dll,LockWorkStation")
+if __name__ == "__main__":
+    SERVER_IP = '127.0.0.1'  # Replace with actual admin IP
+    PORT = 9999
 
-threading.Thread(target=listen, daemon=True).start()
-root.mainloop()
+    app = ClientApp(SERVER_IP, PORT)
+    app.run()

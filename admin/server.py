@@ -37,10 +37,11 @@ class AdminServer:
                 msg = sock.recv(1024).decode()
                 data = json.loads(msg)
                 if data['cmd'] == 'extend_request':
-                    # Accept or reject based on your logic. Here we accept all.
-                    extra = data['minutes']
-                    self.send_command(sock, {"cmd": "extend", "minutes": extra})
-            except:
+                    if self.ui and addr in self.ui.cards:
+                        client_card = self.ui.cards[addr]
+                        client_card.handle_extension_request(data['minutes'])
+            except Exception as e:
+                print(f"Error in client message handling: {e}")
                 break
 
     def send_command(self, sock, cmd):
