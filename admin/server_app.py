@@ -4,7 +4,7 @@ import threading
 
 
 class AdminServer:
-    def __init__(self, host='0.0.0.0', port=9999):
+    def __init__(self, host, port):
         self.host, self.port = host, port
         self.clients = {}  # key: addr, value: (sock, info)
         self.ui = None
