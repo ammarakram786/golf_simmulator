@@ -1,5 +1,7 @@
 import socket
+import threading
 import tkinter as tk
+import time
 from ttkbootstrap import Frame
 from admin.card import ClientCard
 
@@ -17,7 +19,6 @@ class AdminDashboard(Frame):
         self.ip_address = get_ip_address()
         self.server.ui = self
         self.cards = {}
-        # Use a Label widget to display the text statically
         self.info_label = tk.Label(
             self,
             text=f"Server running on {self.ip_address}:{self.server.port}",
@@ -27,13 +28,21 @@ class AdminDashboard(Frame):
         )
         self.info_label.pack(pady=10, fill="x")
 
+        # Start the background thread
+        self.running = True
+        self.cleanup_thread = threading.Thread(target=self._run_cleanup_loop, daemon=True)
+        self.cleanup_thread.start()
+
+    def _run_cleanup_loop(self):
+        while self.running:
+            self.remove_disconnected_clients()
+            time.sleep(5)  # Run every 5 seconds
+
     def add_client(self, addr, sock, info):
         if addr in self.cards:
-            # Update existing client card
             card = self.cards[addr]
             card.update_status("IDLE", connected=True)
         else:
-            # Add new client card
             card = ClientCard(self, info['name'], info['ip'], sock, self.server)
             card.pack(pady=10, padx=10, fill='x')
             self.cards[addr] = card
@@ -41,10 +50,11 @@ class AdminDashboard(Frame):
     def remove_disconnected_clients(self):
         for addr, card in list(self.cards.items()):
             try:
-                # Check if the socket is still connected
-                card.sock.send(b"")  # Sending an empty byte to check connection
+                card.sock.send(b"")
             except (socket.error, OSError):
-                # If the socket is not connected, mark as disconnected and remove
                 card.update_status("Disconnected", connected=False)
-                card.destroy()  # Remove the card from the UI
-                del self.cards[addr]  # Remove the card from the dictionary # Remove the card from the dictionary
+                card.destroy()
+                del self.cards[addr]
+
+    def stop_cleanup(self):
+        self.running = False

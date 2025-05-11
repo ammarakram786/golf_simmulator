@@ -28,6 +28,10 @@ class ClientApp:
                 data = json.loads(msg)
                 if data['cmd'] == 'start':
                     self.overlay.start_session(data['minutes'])
+                elif data['cmd'] == 'add':
+                    self.overlay.update_session(data['minutes'], add_type=True)
+                elif data['cmd'] == 'sub':
+                    self.overlay.update_session(data['minutes'], add_type=False)
                 elif data['cmd'] == 'end':
                     self.overlay.end_session()
                 elif data['cmd'] == 'lock':

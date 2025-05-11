@@ -26,6 +26,13 @@ class SessionOverlay:
         self.win.configure(bg='black')
         self.update_timer()
 
+    def update_session(self, minutes, add_type):
+        if add_type:
+            self.remaining += minutes * 60
+        else:
+            self.remaining -= minutes * 60
+
+
     def update_timer(self):
         if not self.running:
             return
