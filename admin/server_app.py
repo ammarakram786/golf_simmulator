@@ -40,6 +40,10 @@ class AdminServer:
                     if self.ui and addr in self.ui.cards:
                         client_card = self.ui.cards[addr]
                         client_card.handle_extension_request(data['minutes'])
+                elif data['cmd'] == 'end':
+                    if self.ui and addr in self.ui.cards:
+                        client_card = self.ui.cards[addr]
+                        client_card.update_status("IDLE", connected=True)
             except Exception as e:
                 print(f"Error in client message handling: {e}")
                 break

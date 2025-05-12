@@ -66,7 +66,7 @@ class SessionOverlay:
     def __init__(self, root, app):
         self.app = app
         self.extension_asked = False
-        self.remaining = None
+        self.remaining = 0
         self.root = root
         self.win = tk.Toplevel(root)
         self.win.geometry("200x100")  # Smaller window size
@@ -119,9 +119,15 @@ class SessionOverlay:
 
     def update_session(self, minutes, add_type):
         if add_type:
-            self.remaining += minutes * 60
+            if self.remaining <= 0:
+                self.start_session(minutes)
+            else:
+                self.remaining += minutes * 60
         else:
-            self.remaining -= minutes * 60
+            if self.remaining < minutes * 60:
+                self.remaining = 0
+            else:
+                self.remaining -= minutes * 60
 
     def update_timer(self):
         if not self.running:
@@ -239,8 +245,10 @@ class SessionOverlay:
 
     def end_session(self):
         self.running = False
+        self.lock_and_close()
         self.win.withdraw()
 
     def lock_and_close(self):
         subprocess.call("rundll32.exe user32.dll,LockWorkStation")
+        self.app.end_session()
         self.win.withdraw()

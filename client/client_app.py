@@ -144,3 +144,9 @@ class ClientApp:
         except Exception as e:
             print(f"Error requesting extension: {e}")
 
+    def end_session(self):
+        try:
+            self.sock.send(json.dumps({"cmd": "end"}).encode())
+        except Exception as e:
+            print(f"Error requesting end session: {e}")
+

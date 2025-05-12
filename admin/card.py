@@ -1,7 +1,7 @@
-from functools import partial
-from ttkbootstrap import Frame, Label, Button, Toplevel, IntVar
-from ttkbootstrap import Style
 import tkinter as tk
+
+from ttkbootstrap import Frame, Label, Toplevel, IntVar
+from ttkbootstrap import Style
 
 
 class RoundButton(tk.Canvas):
@@ -69,7 +69,7 @@ class ClientCard(Frame):
         # Minty theme colors with additional button colors
         self.colors = {
             'primary': '#2ecc71',    # Mint green
-            'secondary': '#27ae60',  # Darker mint
+            'secondary': '#272bae',  # Darker mint
             'warning': '#e74c3c',    # Red for warning
             'background': '#ffffff', # White
             'text': '#2c3e50',      # Dark blue-gray
@@ -161,9 +161,9 @@ class ClientCard(Frame):
 
         # Action buttons with different colors
         actions = [
-            ("START", partial(self.ask_duration, action='start'), self.colors['primary']),
-            ("+ ADD TIME", partial(self.ask_duration, action='add'), self.colors['info']),
-            ("- SUB TIME", partial(self.ask_duration, action='sub'), self.colors['warning']),
+            ("START", self.ask_duration, self.colors['primary']),
+            ("EDIT", self.handle_duration, self.colors['info']),
+            # ("- SUB TIME", partial(self.ask_duration, action='sub'), self.colors['warning']),
             ("END", self.end_session, self.colors['purple']),
             ("LOCK", self.lock_now, self.colors['orange'])
         ]
@@ -186,16 +186,16 @@ class ClientCard(Frame):
             style = "Error.TLabel"
         self.status.configure(text=status.upper(), style=style)  # Convert status to uppercase
 
-    def ask_duration(self, action):
+    def ask_duration(self):
         duration_win = Toplevel(self.name)
         duration_win.title("Select Session Duration")
-        duration_win.geometry("800x600")  # Reverted window size
-        
+        duration_win.geometry("600x400")
+
         # Make window modal and set focus
         duration_win.transient(self)
         duration_win.grab_set()
         duration_win.focus_set()
-        
+
         # Center the window
         duration_win.update_idletasks()
         width = duration_win.winfo_width()
@@ -210,61 +210,60 @@ class ClientCard(Frame):
 
         # Title with icon
         title_frame = Frame(duration_win, style="Card.TFrame")
-        title_frame.pack(pady=30)  # Reverted padding
-        
+        title_frame.pack(pady=30)
+
         Label(title_frame,
-              text="⏱",  # Clock emoji as icon
-              font=("Helvetica", 32),  # Reverted size
+              text="⏱",
+              font=("Helvetica", 32),
               foreground=self.colors['primary'],
               background=self.colors['card_bg']).pack(side="left", padx=(0, 15))
-              
+
         Label(title_frame,
               text="SELECT DURATION",
-              font=("Helvetica", 28, "bold"),  # Reverted size
+              font=("Helvetica", 28, "bold"),
               foreground=self.colors['text'],
               background=self.colors['card_bg']).pack(side="left")
 
-        # Options frame
-        options_frame = Frame(duration_win, style="Card.TFrame")
-        options_frame.pack(fill="x", padx=30, pady=20)  # Reverted padding
+        # Increment frame
+        increment_frame = Frame(duration_win, style="Card.TFrame")
+        increment_frame.pack(pady=20)
 
-        var = IntVar(value=30)
-        options = [("6 MINUTES", 1), ("30 MINUTES", 30), ("1 HOUR", 60), 
-                  ("1.5 HOURS", 90), ("2 HOURS", 120)]
+        # Variable to hold the time value
+        time_var = IntVar(value=30)
 
-        for label, val in options:
-            rb = tk.Radiobutton(
-                options_frame,
-                text=label,
-                variable=var,
-                value=val,
-                font=("Helvetica", 18),  # Reverted size
-                fg=self.colors['text'],
-                bg=self.colors['card_bg'],
-                activebackground=self.colors['card_bg'],
-                activeforeground=self.colors['primary'],
-                selectcolor=self.colors['card_bg'],
-                highlightthickness=0
-            )
-            rb.pack(anchor='w', pady=8)  # Reverted padding
-            # Add hover effect
-            rb.bind('<Enter>', lambda e, rb=rb: rb.configure(fg=self.colors['primary']))
-            rb.bind('<Leave>', lambda e, rb=rb: rb.configure(fg=self.colors['text']))
+        # Increment and decrement functions
+        def increment():
+            time_var.set(time_var.get() + 1)
+
+        def decrement():
+            if time_var.get() > 0:
+                time_var.set(time_var.get() - 1)
+
+        # Minus button
+        minus_btn = RoundButton(increment_frame, text="-", command=decrement, bg=self.colors['secondary'], width=60,
+                                height=60)
+        minus_btn.pack(side="left", padx=10)
+
+        # Disabled input field
+        time_entry = tk.Entry(increment_frame, textvariable=time_var, font=("Helvetica", 18), width=5, justify="center",
+                              state="disabled", disabledbackground=self.colors['card_bg'],
+                              disabledforeground=self.colors['text'])
+        time_entry.pack(side="left", padx=10)
+
+        # Plus button
+        plus_btn = RoundButton(increment_frame, text="+", command=increment, bg=self.colors['primary'], width=60,
+                               height=60)
+        plus_btn.pack(side="left", padx=10)
 
         # Button frame
         button_frame = Frame(duration_win, style="Card.TFrame")
-        button_frame.pack(pady=30)  # Reverted padding
+        button_frame.pack(pady=30)
 
         def confirm():
             try:
-                minutes = var.get()
+                minutes = time_var.get()
                 if minutes > 0:
-                    if action == "add":
-                        self.add_session(minutes)
-                    elif action == "sub":
-                        self.subtract_session(minutes)
-                    elif action == "start":
-                        self.start_session(minutes)
+                    self.start_session(minutes)
                     duration_win.destroy()
             except Exception as e:
                 print(f"Error in duration selection: {e}")
@@ -273,21 +272,13 @@ class ClientCard(Frame):
             duration_win.destroy()
 
         # Add confirm and cancel buttons
-        confirm_btn = RoundButton(button_frame,
-               text="CONFIRM",
-               command=confirm,
-               bg=self.colors['primary'],
-               width=200,  # Reverted width
-               height=60)  # Reverted height
-        confirm_btn.pack(side="left", padx=15)  # Reverted padding
+        confirm_btn = RoundButton(button_frame, text="CONFIRM", command=confirm, bg=self.colors['primary'], width=200,
+                                  height=60)
+        confirm_btn.pack(side="left", padx=15)
 
-        cancel_btn = RoundButton(button_frame,
-               text="CANCEL",
-               command=cancel,
-               bg=self.colors['warning'],
-               width=200,  # Reverted width
-               height=60)  # Reverted height
-        cancel_btn.pack(side="left", padx=15)  # Reverted padding
+        cancel_btn = RoundButton(button_frame, text="CANCEL", command=cancel, bg=self.colors['warning'], width=200,
+                                 height=60)
+        cancel_btn.pack(side="left", padx=15)
 
         # Bind Enter key to confirm
         duration_win.bind('<Return>', lambda e: confirm())
@@ -296,6 +287,120 @@ class ClientCard(Frame):
 
         # Wait for window to be destroyed
         self.wait_window(duration_win)
+
+    def handle_duration(self):
+        handle_duration_win = Toplevel(self.name)
+        handle_duration_win.title("Edit Session Duration")
+        handle_duration_win.geometry("700x400")
+
+        # Make window modal and set focus
+        handle_duration_win.transient(self)
+        handle_duration_win.grab_set()
+        handle_duration_win.focus_set()
+
+        # Center the window
+        handle_duration_win.update_idletasks()
+        width = handle_duration_win.winfo_width()
+        height = handle_duration_win.winfo_height()
+        x = (handle_duration_win.winfo_screenwidth() // 2) - (width // 2)
+        y = (handle_duration_win.winfo_screenheight() // 2) - (height // 2)
+        handle_duration_win.geometry(f'{width}x{height}+{x}+{y}')
+
+        # Configure window style
+        handle_duration_win.configure(bg=self.colors['card_bg'])
+        handle_duration_win.attributes('-topmost', True)
+
+        # Title with icon
+        title_frame = Frame(handle_duration_win, style="Card.TFrame")
+        title_frame.pack(pady=30)
+
+        Label(title_frame,
+              text="⏱",
+              font=("Helvetica", 32),
+              foreground=self.colors['primary'],
+              background=self.colors['card_bg']).pack(side="left", padx=(0, 15))
+
+        Label(title_frame,
+              text="SELECT DURATION",
+              font=("Helvetica", 28, "bold"),
+              foreground=self.colors['text'],
+              background=self.colors['card_bg']).pack(side="left")
+
+        # Increment frame
+        increment_frame = Frame(handle_duration_win, style="Card.TFrame")
+        increment_frame.pack(pady=20)
+
+        # Variable to hold the time value
+        time_var = IntVar(value=30)
+
+        # Increment and decrement functions
+        def increment():
+            time_var.set(time_var.get() + 1)
+
+        def decrement():
+            if time_var.get() > 0:
+                time_var.set(time_var.get() - 1)
+
+        # Minus button
+        minus_btn = RoundButton(increment_frame, text="-", command=decrement, bg=self.colors['secondary'], width=60,
+                                height=60)
+        minus_btn.pack(side="left", padx=10)
+
+        # Disabled input field
+        time_entry = tk.Entry(increment_frame, textvariable=time_var, font=("Helvetica", 18), width=5, justify="center",
+                              state="disabled", disabledbackground=self.colors['card_bg'],
+                              disabledforeground=self.colors['text'])
+        time_entry.pack(side="left", padx=10)
+
+        # Plus button
+        plus_btn = RoundButton(increment_frame, text="+", command=increment, bg=self.colors['primary'], width=60,
+                               height=60)
+        plus_btn.pack(side="left", padx=10)
+
+        # Button frame
+        button_frame = Frame(handle_duration_win, style="Card.TFrame")
+        button_frame.pack(pady=30)
+
+        def add():
+            try:
+                minutes = time_var.get()
+                if minutes > 0:
+                    self.add_session(minutes)
+                    handle_duration_win.destroy()
+            except Exception as e:
+                print(f"Error in duration selection: {e}")
+        def sub():
+            try:
+                minutes = time_var.get()
+                if minutes > 0:
+                    self.subtract_session(minutes)
+                    handle_duration_win.destroy()
+            except Exception as e:
+                print(f"Error in duration selection: {e}")
+
+        def cancel():
+            handle_duration_win.destroy()
+
+        # Add confirm and cancel buttons
+        add_btn = RoundButton(button_frame, text="ADD", command=add, bg=self.colors['primary'], width=200,
+                                  height=60)
+        add_btn.pack(side="left", padx=15)
+
+        sub_btn = RoundButton(button_frame, text="REMOVE", command=sub, bg=self.colors['info'], width=200,
+                                  height=60)
+        sub_btn.pack(side="left", padx=15)
+
+        cancel_btn = RoundButton(button_frame, text="CANCEL", command=cancel, bg=self.colors['warning'], width=200,
+                                 height=60)
+        cancel_btn.pack(side="left", padx=15)
+
+        # Bind Escape key to cancel
+        handle_duration_win.bind('<Escape>', lambda e: cancel())
+
+        # Wait for window to be destroyed
+        self.wait_window(handle_duration_win)
+
+
 
     def start_session(self, minutes):
         self.server.send_command(self.sock, {"cmd": "start", "minutes": minutes})

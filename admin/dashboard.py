@@ -1,11 +1,8 @@
 import socket
-import threading
 import tkinter as tk
-import time
-from ttkbootstrap import Frame, Scrollbar, Style, Canvas, Label, Button
-from ttkbootstrap.constants import *
-from admin.card import ClientCard
 from datetime import datetime
+from ttkbootstrap import Frame, Style, Label
+from admin.card import ClientCard
 
 
 def get_ip_address():
@@ -141,6 +138,7 @@ class AdminDashboard(Frame):
 
         # Start time update
         self.update_time()
+
 
     def _on_canvas_configure(self, event):
         # Update the width of the frame to match the canvas
