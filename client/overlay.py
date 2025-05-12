@@ -2,7 +2,6 @@ import subprocess
 import threading
 import tkinter as tk
 from tkinter import ttk
-import time
 
 
 class RoundButton(tk.Canvas):

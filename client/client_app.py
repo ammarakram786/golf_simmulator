@@ -1,12 +1,13 @@
-import tkinter as tk
-from tkinter import messagebox
-import socket
-import threading
-import platform
 import json
+import platform
+import socket
 import subprocess
-from overlay import SessionOverlay
-from tkinter import ttk
+import threading
+import time
+import tkinter as tk
+
+from client.overlay import SessionOverlay
+
 
 class ModernMessageBox(tk.Toplevel):
     def __init__(self, parent, title, message, icon="✓", color="#2ecc71"):
@@ -98,7 +99,13 @@ class ClientApp:
         self.root = None
 
     def connect_to_server(self):
-        self.sock.connect((self.server_ip, self.port))
+        while True:
+            try:
+                self.sock.connect((self.server_ip, self.port))
+                break
+            except ConnectionRefusedError:
+                print("Server not available, retrying in 3 seconds...")
+                time.sleep(3)
         name = platform.node()
         ip = socket.gethostbyname(socket.gethostname())
         self.sock.send(json.dumps({"name": name, "ip": ip}).encode())

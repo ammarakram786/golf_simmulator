@@ -1,7 +1,10 @@
 import configparser
+import os
+import sys
+
 from ttkbootstrap import Style, Window, Button
-from server_app import AdminServer
-from dashboard import AdminDashboard
+from admin.server_app import AdminServer
+from admin.dashboard import AdminDashboard
 
 # Configure Minty theme with custom styles
 style = Style('minty')
@@ -65,15 +68,26 @@ root.configure(bg="#ffffff")  # White background
 root.attributes('-alpha', 0.98)  # Slight transparency for modern look
 
 # Load configuration
-config = configparser.ConfigParser()
-config.read('../config.ini')
+# config_path = os.path.join(os.path.dirname(__file__), "config.ini")
 
-# Get Admin IP and Port
+
+# Get path where .exe or script is located
+# Get path where .exe or script is located
+if getattr(sys, 'frozen', False):
+    app_path = os.path.dirname(sys.executable)
+else:
+    app_path = os.path.dirname(os.path.abspath(__file__))
+
+config = configparser.ConfigParser()
+config.read(os.path.join(app_path, "config.ini"))  #
+
 admin_ip = config.get('Admin', 'ip')
 admin_port = config.getint('Admin', 'port')
 
+
+
 # Start server
-server = AdminServer(host=admin_ip, port=admin_port)
+server = AdminServer(host=admin_ip, port=int(admin_port))
 server.start()
 
 # Launch dashboard UI with modern styling
