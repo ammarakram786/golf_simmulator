@@ -187,26 +187,38 @@ class ClientCard(Frame):
         self.status.configure(text=status.upper(), style=style)  # Convert status to uppercase
 
     def ask_duration(self):
-        duration_win = Toplevel(self.name)
+        duration_win = Toplevel(self.master)
         duration_win.title("Select Session Duration")
-        duration_win.geometry("600x400")
-
-        # Make window modal and set focus
-        duration_win.transient(self)
-        duration_win.grab_set()
-        duration_win.focus_set()
-
-        # Center the window
-        duration_win.update_idletasks()
-        width = duration_win.winfo_width()
-        height = duration_win.winfo_height()
-        x = (duration_win.winfo_screenwidth() // 2) - (width // 2)
-        y = (duration_win.winfo_screenheight() // 2) - (height // 2)
-        duration_win.geometry(f'{width}x{height}+{x}+{y}')
-
-        # Configure window style
+        
+        # Set initial size
+        window_width = 600
+        window_height = 400
+        
+        # Configure window style first
         duration_win.configure(bg=self.colors['card_bg'])
         duration_win.attributes('-topmost', True)
+        
+        # Make window modal and set focus
+        duration_win.transient(self.master)
+        duration_win.grab_set()
+        duration_win.focus_set()
+        
+        # Force window to update and get screen dimensions
+        duration_win.update_idletasks()
+        
+        # Get screen dimensions
+        screen_width = duration_win.winfo_screenwidth()
+        screen_height = duration_win.winfo_screenheight()
+        
+        # Calculate position for center of screen
+        x = (screen_width - window_width) // 2
+        y = (screen_height - window_height) // 2
+        
+        # Set window position and size in one call
+        duration_win.geometry(f"{window_width}x{window_height}+{x}+{y}")
+        
+        # Prevent window from being resized
+        duration_win.resizable(False, False)
 
         # Title with icon
         title_frame = Frame(duration_win, style="Card.TFrame")
@@ -289,26 +301,38 @@ class ClientCard(Frame):
         self.wait_window(duration_win)
 
     def handle_duration(self):
-        handle_duration_win = Toplevel(self.name)
+        handle_duration_win = Toplevel(self.master)
         handle_duration_win.title("Edit Session Duration")
-        handle_duration_win.geometry("700x400")
-
-        # Make window modal and set focus
-        handle_duration_win.transient(self)
-        handle_duration_win.grab_set()
-        handle_duration_win.focus_set()
-
-        # Center the window
-        handle_duration_win.update_idletasks()
-        width = handle_duration_win.winfo_width()
-        height = handle_duration_win.winfo_height()
-        x = (handle_duration_win.winfo_screenwidth() // 2) - (width // 2)
-        y = (handle_duration_win.winfo_screenheight() // 2) - (height // 2)
-        handle_duration_win.geometry(f'{width}x{height}+{x}+{y}')
-
-        # Configure window style
+        
+        # Set initial size
+        window_width = 700
+        window_height = 400
+        
+        # Configure window style first
         handle_duration_win.configure(bg=self.colors['card_bg'])
         handle_duration_win.attributes('-topmost', True)
+        
+        # Make window modal and set focus
+        handle_duration_win.transient(self.master)
+        handle_duration_win.grab_set()
+        handle_duration_win.focus_set()
+        
+        # Force window to update and get screen dimensions
+        handle_duration_win.update_idletasks()
+        
+        # Get screen dimensions
+        screen_width = handle_duration_win.winfo_screenwidth()
+        screen_height = handle_duration_win.winfo_screenheight()
+        
+        # Calculate position for center of screen
+        x = (screen_width - window_width) // 2
+        y = (screen_height - window_height) // 2
+        
+        # Set window position and size in one call
+        handle_duration_win.geometry(f"{window_width}x{window_height}+{x}+{y}")
+        
+        # Prevent window from being resized
+        handle_duration_win.resizable(False, False)
 
         # Title with icon
         title_frame = Frame(handle_duration_win, style="Card.TFrame")
@@ -400,8 +424,6 @@ class ClientCard(Frame):
         # Wait for window to be destroyed
         self.wait_window(handle_duration_win)
 
-
-
     def start_session(self, minutes):
         self.server.send_command(self.sock, {"cmd": "start", "minutes": minutes})
         self.update_status("ACTIVE", connected=True)
@@ -425,44 +447,78 @@ class ClientCard(Frame):
         self.update_status("Disconnected", connected=False)
 
     def handle_extension_request(self, minutes):
-        request_win = Toplevel(self.name)
+        request_win = Toplevel(self.master)
         request_win.title(f"Extension Request from {self.name}")
-        request_win.geometry("700x350")  # Increased window size
         
-        # Center the window
+        # Set initial size
+        window_width = 600
+        window_height = 350
+        
+        # Configure window style first
+        request_win.configure(bg=self.colors['background'])
+        request_win.attributes('-topmost', True)
+        
+        # Make window modal and set focus
+        request_win.transient(self.master)
+        request_win.grab_set()
+        request_win.focus_set()
+        
+        # Force window to update and get screen dimensions
         request_win.update_idletasks()
-        width = request_win.winfo_width()
-        height = request_win.winfo_height()
-        x = (request_win.winfo_screenwidth() // 2) - (width // 2)
-        y = (request_win.winfo_screenheight() // 2) - (height // 2)
-        request_win.geometry(f'{width}x{height}+{x}+{y}')
+        
+        # Get screen dimensions
+        screen_width = request_win.winfo_screenwidth()
+        screen_height = request_win.winfo_screenheight()
+        
+        # Calculate position for center of screen
+        x = (screen_width - window_width) // 2
+        y = (screen_height - window_height) // 2
+        
+        # Set window position and size in one call
+        request_win.geometry(f"{window_width}x{window_height}+{x}+{y}")
+        
+        # Prevent window from being resized
+        # request_win.resizable(False, False)
 
         # Title with icon
         title_frame = Frame(request_win, style="Card.TFrame")
-        title_frame.pack(pady=20)  # Increased padding
+        title_frame.pack(pady=20)
         
         Label(title_frame,
               text="⏰",  # Alarm clock emoji as icon
-              font=("Helvetica", 32),  # Increased for touch
+              font=("Helvetica", 32),
               foreground=self.colors['warning'],
               background=self.colors['card_bg']).pack(side="left", padx=(0, 15))
               
         Label(title_frame,
               text="EXTENSION REQUEST",
-              font=("Helvetica", 28, "bold"),  # Increased for touch
+              font=("Helvetica", 28, "bold"),
               foreground=self.colors['text'],
               background=self.colors['card_bg']).pack(side="left")
 
-        # Message
-        Label(request_win,
-              text=f"CLIENT {self.name.upper()} REQUESTS {minutes} MINUTES EXTENSION.",
-              font=("Helvetica", 18),  # Increased for touch
-              foreground=self.colors['text'],
-              background=self.colors['card_bg']).pack(pady=20)  # Increased padding
+        # Message frame with modern styling
+        message_frame = Frame(request_win, style="Card.TFrame")
+        message_frame.pack(fill="x", padx=40, pady=20)
+
+        # Client name with highlight
+        name_label = Label(message_frame,
+                          text=f"CLIENT: {self.name.upper()}",
+                          font=("Helvetica", 20, "bold"),
+                          foreground=self.colors['primary'],
+                          background=self.colors['card_bg'])
+        name_label.pack(anchor='w', pady=(0, 10))
+
+        # Duration request with highlight
+        duration_label = Label(message_frame,
+                             text=f"REQUESTING: {minutes} MINUTES",
+                             font=("Helvetica", 20, "bold"),
+                             foreground=self.colors['info'],
+                             background=self.colors['card_bg'])
+        duration_label.pack(anchor='w')
 
         # Buttons frame
         button_frame = Frame(request_win, style="Card.TFrame")
-        button_frame.pack(pady=30)  # Increased padding
+        button_frame.pack(pady=30)
 
         def approve():
             request_win.destroy()
@@ -476,14 +532,17 @@ class ClientCard(Frame):
                text="APPROVE",
                command=approve,
                bg=self.colors['primary'],
-               width=200,  # Increased for touch
-               height=60)  # Increased for touch
-        approve_btn.pack(side="left", padx=15)  # Increased padding
+               width=200,
+               height=60)
+        approve_btn.pack(side="left", padx=15)
 
         deny_btn = RoundButton(button_frame,
                text="DENY",
                command=deny,
                bg=self.colors['warning'],
-               width=200,  # Increased for touch
-               height=60)  # Increased for touch
-        deny_btn.pack(side="left", padx=15)  # Increased padding
+               width=200,
+               height=60)
+        deny_btn.pack(side="left", padx=15)
+
+
+        
