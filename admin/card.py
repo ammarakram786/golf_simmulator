@@ -116,17 +116,21 @@ class ClientCard(Frame):
         # Apply card style
         self.configure(style="Card.TFrame")
 
-        # Client info section with shadow effect
-        info_frame = Frame(self, style="Card.TFrame")
-        info_frame.pack(fill="x", pady=(0, 15))  # Increased padding
+        # Main container frame
+        main_frame = Frame(self, style="Card.TFrame")
+        main_frame.pack(fill="x", expand=True)
+
+        # Left side - Client info
+        info_frame = Frame(main_frame, style="Card.TFrame")
+        info_frame.pack(side="left", fill="y", padx=(0, 20))
 
         # Name with icon-like styling
         name_frame = Frame(info_frame, style="Card.TFrame")
-        name_frame.pack(fill="x", pady=(0, 10))  # Increased padding
+        name_frame.pack(fill="x", pady=(0, 10))
         
         Label(name_frame, 
               text="●",  # Bullet point as icon
-              font=("Helvetica", 20),  # Increased for touch
+              font=("Helvetica", 20),
               foreground=self.colors['primary'],
               background=self.colors['card_bg']).pack(side="left", padx=(0, 10))
               
@@ -136,11 +140,11 @@ class ClientCard(Frame):
 
         # IP with icon-like styling
         ip_frame = Frame(info_frame, style="Card.TFrame")
-        ip_frame.pack(fill="x")
+        ip_frame.pack(fill="x", pady=(0, 10))
         
         Label(ip_frame, 
               text="●",  # Bullet point as icon
-              font=("Helvetica", 20),  # Increased for touch
+              font=("Helvetica", 20),
               foreground=self.colors['info'],
               background=self.colors['card_bg']).pack(side="left", padx=(0, 10))
               
@@ -148,34 +152,151 @@ class ClientCard(Frame):
               text=f"IP: {ip}", 
               style="Subtitle.TLabel").pack(side="left")
 
-        # Status label with badge-like styling
-        self.status = Label(info_frame, 
+        # Timer with icon-like styling
+        timer_frame = Frame(info_frame, style="Card.TFrame")
+        timer_frame.pack(fill="x", pady=(0, 10))
+        
+        Label(timer_frame, 
+              text="●",  # Bullet point as icon
+              font=("Helvetica", 20),
+              foreground=self.colors['primary'],
+              background=self.colors['card_bg']).pack(side="left", padx=(0, 10))
+              
+        self.timer_label = Label(timer_frame,
+                                text="00:00",
+                                font=("Helvetica", 48, "bold"),
+                                foreground=self.colors['text'],
+                                background=self.colors['card_bg'])
+        self.timer_label.pack(side="left")
+
+        # Status with icon-like styling
+        status_frame = Frame(info_frame, style="Card.TFrame")
+        status_frame.pack(fill="x", pady=(0, 10))
+        
+        Label(status_frame, 
+              text="●",  # Bullet point as icon
+              font=("Helvetica", 20),
+              foreground=self.colors['info'],
+              background=self.colors['card_bg']).pack(side="left", padx=(0, 10))
+              
+        self.status = Label(status_frame, 
                            text="IDLE", 
-                           style="Status.TLabel",
-                           anchor='e')
-        self.status.pack(anchor='e', padx=15)  # Increased padding
+                           style="Status.TLabel")
+        self.status.pack(side="left")
 
-        # Buttons frame with modern layout
-        button_frame = Frame(self, style="Card.TFrame")
-        button_frame.pack(fill="x", pady=(15, 0))  # Increased padding
+        # Right side - Timer controls
+        control_frame = Frame(main_frame, style="Card.TFrame")
+        control_frame.pack(side="right", fill="y")
 
-        # Action buttons with different colors
-        actions = [
-            ("START", self.ask_duration, self.colors['primary']),
-            ("EDIT", self.handle_duration, self.colors['info']),
-            # ("- SUB TIME", partial(self.ask_duration, action='sub'), self.colors['warning']),
-            ("END", self.end_session, self.colors['purple']),
-            ("LOCK", self.lock_now, self.colors['orange'])
-        ]
+        # Start/Stop buttons
+        button_frame = Frame(control_frame, style="Card.TFrame")
+        button_frame.pack(pady=(0, 20))
 
-        for text, command, color in actions:
-            btn = RoundButton(button_frame,
-                  text=text,
-                  command=command,
-                  bg=color,
-                  width=200,  # Increased for touch
-                  height=60)  # Increased for touch
-            btn.pack(side='left', padx=8)  # Increased padding
+        # Start button with green border
+        start_btn = RoundButton(button_frame,
+                              text="START",
+                              command=self.ask_duration,
+                              bg=self.colors['primary'],
+                              width=300,
+                              height=100)
+        start_btn.pack(side="left", padx=20)
+
+        # Stop button with red border
+        stop_btn = RoundButton(button_frame,
+                             text="STOP",
+                             command=self.end_session,
+                             bg=self.colors['warning'],
+                             width=300,
+                             height=100)
+        stop_btn.pack(side="left", padx=20)
+
+        # Time increment frame
+        increment_frame = Frame(control_frame, style="Card.TFrame")
+        increment_frame.pack()
+
+        # First row (60 minutes)
+        row_frame1 = Frame(increment_frame, style="Card.TFrame")
+        row_frame1.pack(pady=10)
+
+        minus_btn1 = RoundButton(row_frame1,
+                               text="-",
+                               command=lambda: self.subtract_session(60),
+                               bg=self.colors['warning'],
+                               width=80,
+                               height=80)
+        minus_btn1.pack(side="left", padx=10)
+
+        time_label1 = Label(row_frame1,
+                          text="60 MIN",
+                          font=("Helvetica", 24, "bold"),
+                          foreground=self.colors['text'],
+                          background=self.colors['card_bg'],
+                          width=8)
+        time_label1.pack(side="left", padx=20)
+
+        plus_btn1 = RoundButton(row_frame1,
+                              text="+",
+                              command=lambda: self.add_session(60),
+                              bg=self.colors['primary'],
+                              width=80,
+                              height=80)
+        plus_btn1.pack(side="left", padx=10)
+
+        # Second row (30 minutes)
+        row_frame2 = Frame(increment_frame, style="Card.TFrame")
+        row_frame2.pack(pady=10)
+
+        minus_btn2 = RoundButton(row_frame2,
+                               text="-",
+                               command=lambda: self.subtract_session(30),
+                               bg=self.colors['warning'],
+                               width=80,
+                               height=80)
+        minus_btn2.pack(side="left", padx=10)
+
+        time_label2 = Label(row_frame2,
+                          text="30 MIN",
+                          font=("Helvetica", 24, "bold"),
+                          foreground=self.colors['text'],
+                          background=self.colors['card_bg'],
+                          width=8)
+        time_label2.pack(side="left", padx=20)
+
+        plus_btn2 = RoundButton(row_frame2,
+                              text="+",
+                              command=lambda: self.add_session(30),
+                              bg=self.colors['primary'],
+                              width=80,
+                              height=80)
+        plus_btn2.pack(side="left", padx=10)
+
+        # Third row (1 minute)
+        row_frame3 = Frame(increment_frame, style="Card.TFrame")
+        row_frame3.pack(pady=10)
+
+        minus_btn3 = RoundButton(row_frame3,
+                               text="-",
+                               command=lambda: self.subtract_session(1),
+                               bg=self.colors['warning'],
+                               width=80,
+                               height=80)
+        minus_btn3.pack(side="left", padx=10)
+
+        time_label3 = Label(row_frame3,
+                          text="1 MIN",
+                          font=("Helvetica", 24, "bold"),
+                          foreground=self.colors['text'],
+                          background=self.colors['card_bg'],
+                          width=8)
+        time_label3.pack(side="left", padx=20)
+
+        plus_btn3 = RoundButton(row_frame3,
+                              text="+",
+                              command=lambda: self.add_session(1),
+                              bg=self.colors['primary'],
+                              width=80,
+                              height=80)
+        plus_btn3.pack(side="left", padx=10)
 
         self.update_status("IDLE", connected=True)
 
@@ -543,6 +664,9 @@ class ClientCard(Frame):
                width=200,
                height=60)
         deny_btn.pack(side="left", padx=15)
+
+    def update_timer(self, minutes, seconds):
+        self.timer_label.configure(text=f"{minutes:02d}:{seconds:02d}")
 
 
         
