@@ -68,17 +68,20 @@ class SessionOverlay:
         self.remaining = 0
         self.root = root
         self.win = tk.Toplevel(root)
-        self.win.geometry("200x100")  # Smaller window size
+        self.win.geometry("300x200")  # Smaller window size
         self.win.overrideredirect(True)
         self.win.attributes('-topmost', True)
         
         # Position window in bottom right corner
         screen_width = self.win.winfo_screenwidth()
         screen_height = self.win.winfo_screenheight()
-        window_width = 200
-        window_height = 100
-        x = screen_width - window_width - 20  # 20 pixels from right edge
-        y = screen_height - window_height - 40  # 40 pixels from bottom edge
+        window_width = 300
+        window_height = 200
+        # x = screen_width - window_width - 20  # 20 pixels from right edge
+        # y = screen_height - window_height - 40  # 40 pixels from bottom edge
+
+        x = 20  # 20 pixels from the left edge
+        y = screen_height - window_height - 40
         self.win.geometry(f"{window_width}x{window_height}+{x}+{y}")
         
         # Minty theme colors
@@ -86,8 +89,8 @@ class SessionOverlay:
             'primary': '#2ecc71',  # Mint green
             'secondary': '#27ae60',  # Darker mint
             'warning': '#e74c3c',  # Red for warning
-            'background': '#ffffff',  # White
-            'text': '#2c3e50',  # Dark blue-gray
+            'background': '#000000',  # White
+            'text': '#ffffff',  # Dark blue-gray
             'light_text': '#ffffff'  # White text
         }
         
@@ -112,8 +115,7 @@ class SessionOverlay:
     def start_session(self, minutes):
         self.remaining = minutes * 60
         self.running = True
-        self.win.deiconify()
-        self.win.configure(bg=self.colors['background'])
+        self.win.withdraw()  # Start hidden
         self.update_timer()
 
     def update_session(self, minutes, add_type):
@@ -133,17 +135,17 @@ class SessionOverlay:
             return
         mins, secs = divmod(self.remaining, 60)
 
-        if self.remaining <= 55:
-            if not self.extension_asked:
-                self.ask_extension()
-            self.win.configure(bg=self.colors['warning'])
-            self.label.configure(bg=self.colors['warning'], fg=self.colors['light_text'])
-        else:
+        if self.remaining <= 5 * 60:
+            self.win.deiconify()  # Show window
             self.win.configure(bg=self.colors['background'])
-            self.label.configure(bg=self.colors['background'], fg=self.colors['text'])
-
-        self.label.config(text=f"{mins:02}:{secs:02}")
-        self.win.update()
+            self.label.configure(bg=self.colors['background'], fg=self.colors['light_text'])
+            self.label.config(text=f"{mins:02}:{secs:02}")
+            self.win.update()
+        else:
+            self.win.withdraw()  # Hide window
+            self.remaining -= 1
+            self.win.after(1000, self.update_timer)
+            return
 
         if self.remaining == 0:
             self.label.config(text="TIME'S UP")

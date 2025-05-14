@@ -65,6 +65,7 @@ class ClientCard(Frame):
     def __init__(self, master, name, ip, sock, server):
         super().__init__(master, padding=20)  # Increased padding
         self.name, self.ip, self.sock, self.server = name, ip, sock, server
+        self.remaining_time = 0
 
         # Minty theme colors with additional button colors
         self.colors = {
@@ -195,7 +196,7 @@ class ClientCard(Frame):
         # Start button with green border
         start_btn = RoundButton(button_frame,
                               text="START",
-                              command=self.ask_duration,
+                              command=lambda: self.add_session(60),
                               bg=self.colors['primary'],
                               width=300,
                               height=100)
@@ -299,6 +300,19 @@ class ClientCard(Frame):
         plus_btn3.pack(side="left", padx=10)
 
         self.update_status("IDLE", connected=True)
+
+
+    def update_timer(self):
+        if self.remaining_time <= 0:
+            self.timer_label.configure(text="00:00")
+            self.timer_label.update()
+            return
+        mins, secs = divmod(self.remaining_time, 60)
+        self.timer_label.configure(text=f"{mins:02d}:{secs:02d}")
+        self.timer_label.update()
+        self.remaining_time -= 1
+        if self.remaining_time >= 0:  # Changed condition to include zero
+            self.timer_label.after(1000, self.update_timer)
 
     def update_status(self, status, connected):
         if connected:
@@ -548,18 +562,31 @@ class ClientCard(Frame):
     def start_session(self, minutes):
         self.server.send_command(self.sock, {"cmd": "start", "minutes": minutes})
         self.update_status("ACTIVE", connected=True)
+        self.remaining_time = minutes * 60  # Set the time directly
+        self.update_timer()  # Start the timer
 
     def add_session(self, minutes):
         self.server.send_command(self.sock, {"cmd": "add", "minutes": minutes})
         self.update_status("ACTIVE", connected=True)
+        self.remaining_time += minutes * 60
+        if self.remaining_time == minutes * 60:  # If this is the first time being set
+            self.update_timer()  # Start the timer
 
     def subtract_session(self, minutes):
         self.server.send_command(self.sock, {"cmd": "sub", "minutes": minutes})
         self.update_status("ACTIVE", connected=True)
+        self.remaining_time = max(0, self.remaining_time - minutes * 60)  # Ensure time doesn't go negative
+        if self.remaining_time == 0:
+            self.timer_label.configure(text="00:00")
+            self.timer_label.update()
+            self.update_status("IDLE", connected=True)  # Update status when time reaches zero
 
     def end_session(self):
         self.server.send_command(self.sock, {"cmd": "end"})
         self.update_status("IDLE", connected=True)
+        self.remaining_time = 0
+        self.timer_label.configure(text="00:00")
+        self.timer_label.update()
 
     def lock_now(self):
         self.server.send_command(self.sock, {"cmd": "lock"})
@@ -665,8 +692,6 @@ class ClientCard(Frame):
                height=60)
         deny_btn.pack(side="left", padx=15)
 
-    def update_timer(self, minutes, seconds):
-        self.timer_label.configure(text=f"{minutes:02d}:{seconds:02d}")
 
 
         
