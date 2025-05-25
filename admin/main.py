@@ -7,7 +7,7 @@ from admin.server_app import AdminServer
 from admin.dashboard import AdminDashboard
 
 # Configure Minty theme with custom styles
-style = Style('darkly')  # Using 'superhero' for a modern look
+style = Style('superhero')  # Using 'superhero' for a modern look
 root = style.master
 
 # Configure custom styles
