@@ -136,9 +136,16 @@ class AdminDashboard(Frame):
         self.canvas.bind('<Configure>', self._on_canvas_configure)
         self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
 
+        # Create a frame to hold the grid of cards
+        self.cards_frame = Frame(self.scrollable_frame, style="Card.TFrame")
+        self.cards_frame.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        # Configure grid columns to have equal weight
+        self.cards_frame.grid_columnconfigure(0, weight=1)
+        self.cards_frame.grid_columnconfigure(1, weight=1)
+
         # Start time update
         self.update_time()
-
 
     def _on_canvas_configure(self, event):
         # Update the width of the frame to match the canvas
@@ -157,8 +164,11 @@ class AdminDashboard(Frame):
             card = self.cards[addr]
             card.update_status("IDLE", connected=True)
         else:
-            card = ClientCard(self.scrollable_frame, info['name'], info['ip'], sock, self.server)
-            card.pack(fill="x", pady=10, padx=10)
+            card = ClientCard(self.cards_frame, info['name'], info['ip'], sock, self.server)
+            # Calculate the position in the grid
+            row = len(self.cards) // 2
+            col = len(self.cards) % 2
+            card.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
             self.cards[addr] = card
             # Update scroll region after adding new card
             self._on_frame_configure()
