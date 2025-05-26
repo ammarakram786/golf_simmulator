@@ -55,7 +55,7 @@ class ClientCard(Frame):
         self.colors = {
             'primary': '#D3F36B',    # Mint green
             'secondary': '#272bae',  # Darker mint
-            'warning': '#e67e22',    # Red for warning
+            'warning': '#ff0000',    # Red for warning
             'background': '#ffffff', # White (This is likely for the main window, not the card)
             'text': '#ffffff',      # White text
             'light_text': '#ffffff', # White text
@@ -65,7 +65,8 @@ class ClientCard(Frame):
             'info': '#3498db',      # Blue for info
             'purple': '#9b59b6',    # Purple for special actions
             'orange': '#e67e22',    # Orange for warnings
-            'card_bg': '#000000'    # Black for card background
+            'card_bg': '#1a1a1a' ,  # Black for card background
+            #   #FF0000
         }
 
         # Configure styles
@@ -208,15 +209,16 @@ class ClientCard(Frame):
                                fg="#ffffff",  # White text for visibility on colored button
                                width=40,  # Increased from 30
                                height=40)  # Increased from 30
-        minus_btn1.pack(side="left", padx=2, pady=0, expand=True, fill="both")  # Adjusted padding and added fill/expand
+        minus_btn1.pack(side="left", padx=2, pady=0)  # Adjusted padding and added fill/expand
 
         time_label1 = Label(time_frame_60,
                           text="60 min",
-                          font=("Helvetica", 14, "bold"),  # Increased from 12
+                          font=("Helvetica", 14, "bold"),
                           foreground=self.colors['text'],
                           background=self.colors['card_bg'],
-                          width=8)  # Increased width to accommodate longer text
-        time_label1.pack(side="left", padx=2, pady=0)  # Adjusted padding
+                          width=8,
+                          anchor="center")  # Added anchor="center"
+        time_label1.pack(side="left", padx=2, pady=0, expand=True, fill="both")
 
         plus_btn1 = RoundButton(time_frame_60,
                               text="+",
@@ -225,7 +227,7 @@ class ClientCard(Frame):
                               fg="#ffffff",  # White text for visibility on colored button
                               width=40,  # Increased from 30
                               height=40)  # Increased from 30
-        plus_btn1.pack(side="left", padx=2, pady=0, expand=True, fill="both")  # Adjusted padding and added fill/expand
+        plus_btn1.pack(side="left", padx=2, pady=0)  # Adjusted padding and added fill/expand
 
         # 1 minute controls
         time_frame_1 = Frame(col1_frame, style="Card.TFrame")
@@ -242,11 +244,12 @@ class ClientCard(Frame):
 
         time_label3 = Label(time_frame_1,
                           text="1 min",
-                          font=("Helvetica", 14, "bold"),  # Increased from 12
+                          font=("Helvetica", 14, "bold"),
                           foreground=self.colors['text'],
                           background=self.colors['card_bg'],
-                          width=8)  # Increased width to accommodate longer text
-        time_label3.pack(side="left", padx=2, pady=0)  # Adjusted padding
+                          width=8,
+                          anchor="center")  # Added anchor="center"
+        time_label3.pack(side="left", padx=2, pady=0, expand=True, fill="both")
 
         plus_btn3 = RoundButton(time_frame_1,
                               text="+",
@@ -276,11 +279,12 @@ class ClientCard(Frame):
 
         time_label2 = Label(time_frame_30,
                           text="30 min",
-                          font=("Helvetica", 14, "bold"),  # Increased from 12
+                          font=("Helvetica", 14, "bold"),
                           foreground=self.colors['text'],
                           background=self.colors['card_bg'],
-                          width=8)  # Increased width to accommodate longer text
-        time_label2.pack(side="left", padx=2, pady=0)  # Adjusted padding
+                          width=8,
+                          anchor="center")  # Added anchor="center"
+        time_label2.pack(side="left", padx=2, pady=0, expand=True, fill="both")
 
         plus_btn2 = RoundButton(time_frame_30,
                               text="+",
