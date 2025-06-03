@@ -5,13 +5,14 @@ from ttkbootstrap import Style
 
 
 class RoundButton(tk.Canvas):
-    def __init__(self, parent, text, command=None, width=200, height=60, bg="#2ecc71", fg="#000000", **kwargs):
+    def __init__(self, parent, text, command=None, width=200, height=60, bg="#2ecc71", fg="#000000",hover_bg="#950606", **kwargs):
         super().__init__(parent, width=width, height=height, highlightthickness=0, **kwargs)
         self.command = command
         self.width = width
         self.height = height
         self.bg = bg
         self.fg = fg
+        self.hover_bg = hover_bg
         fg = "#000000"
 
         # Draw the rectangular button with no visible outline
@@ -28,18 +29,21 @@ class RoundButton(tk.Canvas):
         # Bind events
         self.tag_bind(self.rect, "<Button-1>", self._on_click)
         self.tag_bind(self.text, "<Button-1>", self._on_click)
-        self.tag_bind(self.rect, "<Enter>", self._on_enter)
+        self.tag_bind(self.rect, "<Enter>", self._on_hover)
+        self.tag_bind(self.text, "<Enter>", self._on_hover)
         self.tag_bind(self.rect, "<Leave>", self._on_leave)
+        self.tag_bind(self.text, "<Leave>", self._on_leave)
 
     def _on_click(self, event):
         if self.command:
             self.command()
 
+    def _on_hover(self, event):
+        self.itemconfig(self.rect, fill=self.hover_bg, outline=self.hover_bg)
+
     def _on_enter(self, event):
-        # Darken the color on hover
-        r, g, b = self.winfo_rgb(self.bg)
-        darker = f'#{int(r/256*0.8):02x}{int(g/256*0.8):02x}{int(b/256*0.8):02x}'
-        self.itemconfig(self.rect, fill=darker, outline=darker)
+        self.itemconfig(self.rect, fill=self.hover_bg, outline=self.hover_bg)
+
 
     def _on_leave(self, event):
         self.itemconfig(self.rect, fill=self.bg, outline=self.bg)
@@ -55,7 +59,7 @@ class ClientCard(Frame):
         self.colors = {
             'primary': '#D3F36B',    # Mint green
             'secondary': '#272bae',  # Darker mint
-            'warning': '#ff0000',    # Red for warning
+            'warning': '#ff4d4d',    # Red for warning
             'background': '#ffffff', # White (This is likely for the main window, not the card)
             'text': '#ffffff',      # White text
             'light_text': '#ffffff', # White text
@@ -176,6 +180,7 @@ class ClientCard(Frame):
                               text="START",
                               command=lambda: self.add_session(60),
                               bg=self.colors['primary'],
+                                hover_bg="#06402B",
                               fg="#ffffff",  # White text for visibility on colored button
                               width=120,  # Increased from 100
                               height=40)  # Increased from 35
@@ -185,6 +190,7 @@ class ClientCard(Frame):
                              text="Lock",
                              command=self.end_session,
                              bg=self.colors['warning'],
+                             hover_bg="#950606",
                              fg="#ffffff",  # White text for visibility on colored button
                              width=120,  # Increased from 100
                              height=40)  # Increased from 35
@@ -206,6 +212,7 @@ class ClientCard(Frame):
                                text="-",
                                command=lambda: self.subtract_session(60),
                                bg=self.colors['warning'],
+                               hover_bg="#950606",
                                fg="#ffffff",  # White text for visibility on colored button
                                width=40,  # Increased from 30
                                height=40)  # Increased from 30
@@ -224,6 +231,7 @@ class ClientCard(Frame):
                               text="+",
                               command=lambda: self.add_session(60),
                               bg=self.colors['primary'],
+                                hover_bg="#06402B",
                               fg="#ffffff",  # White text for visibility on colored button
                               width=40,  # Increased from 30
                               height=40)  # Increased from 30
@@ -237,6 +245,7 @@ class ClientCard(Frame):
                                text="-",
                                command=lambda: self.subtract_session(1),
                                bg=self.colors['warning'],
+                                 hover_bg="#950606",
                                fg="#ffffff",  # White text for visibility on colored button
                                width=40,  # Increased from 30
                                height=40)  # Increased from 30
@@ -255,6 +264,7 @@ class ClientCard(Frame):
                               text="+",
                               command=lambda: self.add_session(1),
                               bg=self.colors['primary'],
+                                hover_bg="#06402B",
                               fg="#ffffff",  # White text for visibility on colored button
                               width=40,  # Increased from 30
                               height=40)  # Increased from 30
@@ -272,6 +282,7 @@ class ClientCard(Frame):
                                text="-",
                                command=lambda: self.subtract_session(30),
                                bg=self.colors['warning'],
+                                 hover_bg="#950606",
                                fg="#ffffff",  # White text for visibility on colored button
                                width=40,  # Increased from 30
                                height=40)  # Increased from 30
@@ -290,6 +301,7 @@ class ClientCard(Frame):
                               text="+",
                               command=lambda: self.add_session(30),
                               bg=self.colors['primary'],
+                                hover_bg="#06402B",
                               fg="#ffffff",  # White text for visibility on colored button
                               width=40,  # Increased from 30
                               height=40)  # Increased from 30
@@ -394,7 +406,7 @@ class ClientCard(Frame):
         time_entry.pack(side="left", padx=10)
 
         # Plus button
-        plus_btn = RoundButton(increment_frame, text="+", command=increment, bg=self.colors['primary'], width=60,
+        plus_btn = RoundButton(increment_frame, text="+", command=increment, bg=self.colors['primary'],hover_bg="#06402B", width=60,
                                height=60)
         plus_btn.pack(side="left", padx=10)
 

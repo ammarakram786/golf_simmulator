@@ -173,6 +173,17 @@ class AdminDashboard(Frame):
             # Update scroll region after adding new card
             self._on_frame_configure()
 
+    # def remove_disconnected_clients(self):
+    #     for addr, card in list(self.cards.items()):
+    #         try:
+    #             card.sock.send(b"")
+    #         except (socket.error, OSError):
+    #             card.update_status("Disconnected", connected=False)
+    #             card.destroy()
+    #             del self.cards[addr]
+    #             # Update scroll region after removing card
+    #             self._on_frame_configure()
+
     def remove_disconnected_clients(self):
         for addr, card in list(self.cards.items()):
             try:
@@ -181,8 +192,15 @@ class AdminDashboard(Frame):
                 card.update_status("Disconnected", connected=False)
                 card.destroy()
                 del self.cards[addr]
-                # Update scroll region after removing card
-                self._on_frame_configure()
+
+        # Rearrange the remaining cards
+        for index, card in enumerate(self.cards.values()):
+            row = index // 2
+            col = index % 2
+            card.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
+
+        # Update scroll region after rearranging cards
+        self._on_frame_configure()
 
     def stop_cleanup(self):
         self.running = False
