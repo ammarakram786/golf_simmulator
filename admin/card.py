@@ -13,7 +13,8 @@ class RoundButton(tk.Canvas):
         self.bg = bg
         self.fg = fg
         self.hover_bg = hover_bg
-        fg = "#000000"
+        # fg = "#000000"
+        # fg = "#000000"   #8cc751
 
         # Draw the rectangular button with no visible outline
         self.rect = self.create_rectangle(0, 0, width, height, fill=bg, outline=bg)
@@ -59,7 +60,7 @@ class ClientCard(Frame):
         self.colors = {
             'primary': '#D3F36B',    # Mint green
             'secondary': '#272bae',  # Darker mint
-            'warning': '#ff4d4d',    # Red for warning
+            'warning': '#d65237',    # Red for warning
             'background': '#ffffff', # White (This is likely for the main window, not the card)
             'text': '#ffffff',      # White text
             'light_text': '#ffffff', # White text
@@ -180,8 +181,8 @@ class ClientCard(Frame):
                               text="START",
                               command=lambda: self.add_session(60),
                               bg=self.colors['primary'],
-                                hover_bg="#06402B",
-                              fg="#ffffff",  # White text for visibility on colored button
+                              fg="#000000",  # White text for visibility on colored button
+                              hover_bg="#8cc751",  # White text for visibility on colored button
                               width=120,  # Increased from 100
                               height=40)  # Increased from 35
         start_btn.pack(side="left", padx=5, pady=0, expand=True, fill="both")  # Adjusted padding and added fill/expand
@@ -231,8 +232,8 @@ class ClientCard(Frame):
                               text="+",
                               command=lambda: self.add_session(60),
                               bg=self.colors['primary'],
-                                hover_bg="#06402B",
-                              fg="#ffffff",  # White text for visibility on colored button
+                                hover_bg="#8cc751",  # White text for visibility on colored button
+                              fg="#000000",  # White text for visibility on colored button
                               width=40,  # Increased from 30
                               height=40)  # Increased from 30
         plus_btn1.pack(side="left", padx=2, pady=0)  # Adjusted padding and added fill/expand
@@ -264,8 +265,8 @@ class ClientCard(Frame):
                               text="+",
                               command=lambda: self.add_session(1),
                               bg=self.colors['primary'],
-                                hover_bg="#06402B",
-                              fg="#ffffff",  # White text for visibility on colored button
+                                hover_bg="#8cc751",  # White text for visibility on colored button
+                              fg="#000000",  # White text for visibility on colored button
                               width=40,  # Increased from 30
                               height=40)  # Increased from 30
         plus_btn3.pack(side="left", padx=2, pady=0, expand=True, fill="both")  # Adjusted padding and added fill/expand
@@ -301,8 +302,8 @@ class ClientCard(Frame):
                               text="+",
                               command=lambda: self.add_session(30),
                               bg=self.colors['primary'],
-                                hover_bg="#06402B",
-                              fg="#ffffff",  # White text for visibility on colored button
+                                hover_bg="#8cc751", # White text for visibility on colored button
+                              fg="#000000",  # White text for visibility on colored button
                               width=40,  # Increased from 30
                               height=40)  # Increased from 30
         plus_btn2.pack(side="left", padx=2, pady=0, expand=True, fill="both")  # Adjusted padding and added fill/expand
@@ -406,7 +407,7 @@ class ClientCard(Frame):
         time_entry.pack(side="left", padx=10)
 
         # Plus button
-        plus_btn = RoundButton(increment_frame, text="+", command=increment, bg=self.colors['primary'],hover_bg="#06402B", width=60,
+        plus_btn = RoundButton(increment_frame, text="+", command=increment, bg=self.colors['primary'], width=60,
                                height=60)
         plus_btn.pack(side="left", padx=10)
 
