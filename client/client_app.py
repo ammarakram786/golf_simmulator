@@ -1,3 +1,4 @@
+import ctypes
 import json
 import platform
 import socket
@@ -9,86 +10,90 @@ import tkinter as tk
 from client.overlay import SessionOverlay
 
 
-class ModernMessageBox(tk.Toplevel):
-    def __init__(self, parent, title, message, icon="✓", color="#2ecc71"):
-        super().__init__(parent)
-        self.title(title)
-        
-        # Configure window
-        self.geometry("400x200")
-        self.configure(bg='#ffffff')
-        self.attributes('-topmost', True)
-        
-        # Remove window decorations
-        self.overrideredirect(True)
-        
-        # Center the window
-        self.update_idletasks()
-        width = self.winfo_width()
-        height = self.winfo_height()
-        x = (self.winfo_screenwidth() // 2) - (width // 2)
-        y = (self.winfo_screenheight() // 2) - (height // 2)
-        self.geometry(f'{width}x{height}+{x}+{y}')
-        
-        # Main frame
-        main_frame = tk.Frame(self, bg='#ffffff', padx=20, pady=20)
-        main_frame.pack(fill='both', expand=True)
-        
-        # Icon
-        icon_label = tk.Label(
-            main_frame,
-            text=icon,
-            font=("Helvetica", 40),
-            fg=color,
-            bg='#ffffff'
-        )
-        icon_label.pack(pady=(0, 10))
-        
-        # Message
-        message_label = tk.Label(
-            main_frame,
-            text=message,
-            font=("Helvetica", 16, "bold"),
-            fg='#2c3e50',
-            bg='#ffffff',
-            wraplength=350
-        )
-        message_label.pack(pady=(0, 20))
-        
-        # OK button
-        ok_button = tk.Button(
-            main_frame,
-            text="OK",
-            font=("Helvetica", 14, "bold"),
-            fg='white',
-            bg=color,
-            relief='flat',
-            padx=30,
-            pady=10,
-            command=self.destroy
-        )
-        ok_button.pack()
-        
-        # Add hover effect
-        ok_button.bind('<Enter>', lambda e: ok_button.configure(bg=self._darken_color(color)))
-        ok_button.bind('<Leave>', lambda e: ok_button.configure(bg=color))
-        
-        # Auto close after 3 seconds
-        self.after(3000, self.destroy)
-    
-    def _darken_color(self, color):
-        # Convert hex to RGB
-        r = int(color[1:3], 16)
-        g = int(color[3:5], 16)
-        b = int(color[5:7], 16)
-        
-        # Darken by 20%
-        r = int(r * 0.8)
-        g = int(g * 0.8)
-        b = int(b * 0.8)
-        
-        # Convert back to hex
-        return f'#{r:02x}{g:02x}{b:02x}'
+# class ModernMessageBox(tk.Toplevel):
+#     def __init__(self, parent, title, message, icon="✓", color="#2ecc71"):
+#         super().__init__(parent)
+#         self.title(title)
+#
+#         # Configure window
+#         self.geometry("400x200")
+#         self.configure(bg='#ffffff')
+#         self.attributes('-topmost', True)
+#
+#         # Remove window decorations
+#         self.overrideredirect(True)
+#
+#         # Center the window
+#         self.update_idletasks()
+#         width = self.winfo_width()
+#         height = self.winfo_height()
+#         x = (self.winfo_screenwidth() // 2) - (width // 2)
+#         y = (self.winfo_screenheight() // 2) - (height // 2)
+#         self.geometry(f'{width}x{height}+{x}+{y}')
+#
+#         # Main frame
+#         main_frame = tk.Frame(self, bg='#ffffff', padx=20, pady=20)
+#         main_frame.pack(fill='both', expand=True)
+#
+#         # Icon
+#         icon_label = tk.Label(
+#             main_frame,
+#             text=icon,
+#             font=("Helvetica", 40),
+#             fg=color,
+#             bg='#ffffff'
+#         )
+#         icon_label.pack(pady=(0, 10))
+#
+#         # Message
+#         message_label = tk.Label(
+#             main_frame,
+#             text=message,
+#             font=("Helvetica", 16, "bold"),
+#             fg='#2c3e50',
+#             bg='#ffffff',
+#             wraplength=350
+#         )
+#         message_label.pack(pady=(0, 20))
+#
+#         # OK button
+#         ok_button = tk.Button(
+#             main_frame,
+#             text="OK",
+#             font=("Helvetica", 14, "bold"),
+#             fg='white',
+#             bg=color,
+#             relief='flat',
+#             padx=30,
+#             pady=10,
+#             command=self.destroy
+#         )
+#         ok_button.pack()
+#
+#         # Add hover effect
+#         ok_button.bind('<Enter>', lambda e: ok_button.configure(bg=self._darken_color(color)))
+#         ok_button.bind('<Leave>', lambda e: ok_button.configure(bg=color))
+#
+#         # Auto close after 3 seconds
+#         self.after(3000, self.destroy)
+#
+#     def _darken_color(self, color):
+#         # Convert hex to RGB
+#         r = int(color[1:3], 16)
+#         g = int(color[3:5], 16)
+#         b = int(color[5:7], 16)
+#
+#         # Darken by 20%
+#         r = int(r * 0.8)
+#         g = int(g * 0.8)
+#         b = int(b * 0.8)
+#
+#         # Convert back to hex
+#         return f'#{r:02x}{g:02x}{b:02x}'
+
+def block_input(block=True):
+    ctypes.windll.user32.BlockInput(block)
+
 
 class ClientApp:
     def __init__(self, server_ip, port):
@@ -125,12 +130,12 @@ class ClientApp:
                     self.overlay.end_session()
                 elif data['cmd'] == 'lock':
                     subprocess.call("rundll32.exe user32.dll,LockWorkStation")
-                elif data['cmd'] == 'extend':
-                    if data.get('approved'):
-                        self.overlay.extend_session(data['minutes'])
-                        ModernMessageBox(self.root, "Success", "Admin accepted your extension request.", "✓", "#2ecc71")
-                    else:
-                        ModernMessageBox(self.root, "Notice", "Admin denied your extension request.", "✕", "#e74c3c")
+                # elif data['cmd'] == 'extend':
+                #     if data.get('approved'):
+                #         self.overlay.extend_session(data['minutes'])
+                #         ModernMessageBox(self.root, "Success", "Admin accepted your extension request.", "✓", "#2ecc71")
+                #     else:
+                #         ModernMessageBox(self.root, "Notice", "Admin denied your extension request.", "✕", "#e74c3c")
             except Exception as e:
                 print("Error receiving data from server.", e)
                 break

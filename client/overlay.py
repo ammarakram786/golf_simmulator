@@ -1,7 +1,10 @@
+import ctypes
 import subprocess
 import threading
 import tkinter as tk
 from tkinter import ttk
+
+overlay_window = None
 
 
 class RoundButton(tk.Canvas):
@@ -60,6 +63,8 @@ class RoundButton(tk.Canvas):
     def _on_leave(self, event):
         self.itemconfig(self.rect, fill=self.bg, outline=self.bg)
 
+def block_input(block=True):
+    ctypes.windll.user32.BlockInput(block)
 
 class SessionOverlay:
     def __init__(self, root, app):
@@ -117,6 +122,8 @@ class SessionOverlay:
         self.running = True
         self.win.withdraw()  # Start hidden
         self.update_timer()
+        block_input(False)
+        hide_overlay()
 
     def update_session(self, minutes, add_type):
         if add_type:
@@ -250,6 +257,28 @@ class SessionOverlay:
         self.win.withdraw()
 
     def lock_and_close(self):
-        subprocess.call("rundll32.exe user32.dll,LockWorkStation")
+        # subprocess.call("rundll32.exe user32.dll,LockWorkStation")
+        block_input(True)
+        show_overlay("Session Ended")
         self.app.end_session()
         self.win.withdraw()
+
+
+def show_overlay(message="Session Ended"):
+    global overlay_window
+    if overlay_window is not None:
+        return
+    overlay_window = tk.Tk()
+    overlay_window.attributes('-fullscreen', True)
+    overlay_window.configure(bg='black')
+    overlay_window.attributes('-topmost', True)
+    overlay_window.protocol("WM_DELETE_WINDOW", lambda: None)  # Disable close
+    label = tk.Label(overlay_window, text=message, fg="white", bg="black", font=("Arial", 40))
+    label.pack(expand=True)
+    overlay_window.mainloop()
+
+def hide_overlay():
+    global overlay_window
+    if overlay_window:
+        overlay_window.destroy()
+        overlay_window = None
