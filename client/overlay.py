@@ -1,10 +1,13 @@
 import ctypes
+import os
 import subprocess
+import sys
 import threading
 import tkinter as tk
 from tkinter import ttk
 
 overlay_window = None
+overlay_image = None  # Global variable to keep a reference to the image
 
 
 class RoundButton(tk.Canvas):
@@ -85,8 +88,8 @@ class SessionOverlay:
         # x = screen_width - window_width - 20  # 20 pixels from right edge
         # y = screen_height - window_height - 40  # 40 pixels from bottom edge
 
-        x = 20  # 20 pixels from the left edge
-        y = screen_height - window_height - 40
+        x = screen_width - window_width - 20
+        y = 20
         self.win.geometry(f"{window_width}x{window_height}+{x}+{y}")
         
         # Minty theme colors
@@ -122,7 +125,7 @@ class SessionOverlay:
         self.running = True
         self.win.withdraw()  # Start hidden
         self.update_timer()
-        block_input(False)
+        # block_input(False)
         hide_overlay()
 
     def update_session(self, minutes, add_type):
@@ -142,9 +145,10 @@ class SessionOverlay:
             return
         mins, secs = divmod(self.remaining, 60)
 
-        if self.remaining <= 5 * 60:
+        if self.remaining <= 2 * 60:
             self.win.deiconify()  # Show window
             self.win.configure(bg=self.colors['background'])
+            self.win.attributes('-transparent', self.colors['background'])  # Make window transparent
             self.label.configure(bg=self.colors['background'], fg=self.colors['light_text'])
             self.label.config(text=f"{mins:02}:{secs:02}")
             self.win.update()
@@ -157,7 +161,8 @@ class SessionOverlay:
         if self.remaining == 0:
             self.label.config(text="TIME'S UP")
             self.win.update()
-            threading.Timer(5,self.lock_and_close).start()
+            # threading.Timer(5,self.lock_and_close).start()
+            self.win.after(5000, self.lock_and_close)
             return
 
         self.remaining -= 1
@@ -258,23 +263,34 @@ class SessionOverlay:
 
     def lock_and_close(self):
         # subprocess.call("rundll32.exe user32.dll,LockWorkStation")
-        block_input(True)
-        show_overlay("Session Ended")
+        # block_input(True)
+        show_overlay()
         self.app.end_session()
         self.win.withdraw()
 
 
-def show_overlay(message="Session Ended"):
-    global overlay_window
+def show_overlay():
+    global overlay_window, overlay_image  # Keep a reference to the image
+    image_path = r"D:\AG_APPS\golf_simulator\client\image.png"  # Use raw string for Windows paths
+
+    if not os.path.exists(image_path):
+        print(f"Error: Image file not found at {image_path}")
+        return
+
     if overlay_window is not None:
         return
+
     overlay_window = tk.Tk()
     overlay_window.attributes('-fullscreen', True)
     overlay_window.configure(bg='black')
     overlay_window.attributes('-topmost', True)
     overlay_window.protocol("WM_DELETE_WINDOW", lambda: None)  # Disable close
-    label = tk.Label(overlay_window, text=message, fg="white", bg="black", font=("Arial", 40))
-    label.pack(expand=True)
+
+    # Load and store the image globally to prevent garbage collection
+    overlay_image = tk.PhotoImage(file=image_path)  # Ensure this is assigned globally
+    img_label = tk.Label(overlay_window, image=overlay_image, bg="black")
+    img_label.pack(pady=20)
+
     overlay_window.mainloop()
 
 def hide_overlay():
@@ -282,3 +298,8 @@ def hide_overlay():
     if overlay_window:
         overlay_window.destroy()
         overlay_window = None
+
+if getattr(sys, 'frozen', False):
+    app_path = os.path.dirname(sys.executable)  # Running from .exe
+else:
+    app_path = os.path.dirname(os.path.abspath(__file__))  # Running from .py
