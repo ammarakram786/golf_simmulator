@@ -121,12 +121,13 @@ class SessionOverlay:
         self.win.withdraw()
 
     def start_session(self, minutes):
+        block_input(False)
+        hide_overlay()
         self.remaining = minutes * 60
         self.running = True
         self.win.withdraw()  # Start hidden
         self.update_timer()
-        # block_input(False)
-        hide_overlay()
+
 
     def update_session(self, minutes, add_type):
         if add_type:
@@ -263,41 +264,70 @@ class SessionOverlay:
 
     def lock_and_close(self):
         # subprocess.call("rundll32.exe user32.dll,LockWorkStation")
-        # block_input(True)
+        block_input(True)
         show_overlay()
         self.app.end_session()
         self.win.withdraw()
 
 
 def show_overlay():
-    global overlay_window, overlay_image  # Keep a reference to the image
-    image_path = r"D:\AG_APPS\golf_simulator\client\image.png"  # Use raw string for Windows paths
+    global overlay_window, overlay_image
 
-    if not os.path.exists(image_path):
-        print(f"Error: Image file not found at {image_path}")
-        return
+    # First close any existing overlay window
+    if overlay_window:
+        try:
+            overlay_window.destroy()
+        except:
+            pass
+        overlay_window = None
 
-    if overlay_window is not None:
-        return
-
-    overlay_window = tk.Tk()
-    overlay_window.attributes('-fullscreen', True)
+    # Create new window
+    overlay_window = tk.Toplevel()
     overlay_window.configure(bg='black')
     overlay_window.attributes('-topmost', True)
-    overlay_window.protocol("WM_DELETE_WINDOW", lambda: None)  # Disable close
+    overlay_window.title("Session Ended")
+    overlay_window.attributes('-fullscreen', True)
 
-    # Load and store the image globally to prevent garbage collection
-    overlay_image = tk.PhotoImage(file=image_path)  # Ensure this is assigned globally
-    img_label = tk.Label(overlay_window, image=overlay_image, bg="black")
-    img_label.pack(pady=20)
+    # Use the app_path to create a relative path to the image
+    image_path = os.path.join(app_path, "image.png")
 
-    overlay_window.mainloop()
-
+    try:
+        if os.path.exists(image_path):
+            # Load the image directly with tkinter
+            overlay_image = tk.PhotoImage(file=image_path)
+            img_label = tk.Label(overlay_window, image=overlay_image, bg="black")
+            img_label.image = overlay_image  # Keep a reference
+            img_label.pack(expand=True, fill='both')
+        else:
+            # Fallback text if image not found
+            fallback_label = tk.Label(
+                overlay_window,
+                text="SESSION ENDED",
+                font=("Helvetica", 36, "bold"),
+                fg="white",
+                bg="black"
+            )
+            fallback_label.pack(expand=True, fill='both', pady=50)
+    except Exception as e:
+        print(f"Error loading image: {e}")
+        # Fallback text on error
+        fallback_label = tk.Label(
+            overlay_window,
+            text="SESSION ENDED",
+            font=("Helvetica", 36, "bold"),
+            fg="white",
+            bg="black"
+        )
+        fallback_label.pack(expand=True, fill='both', pady=50)
 def hide_overlay():
     global overlay_window
     if overlay_window:
-        overlay_window.destroy()
-        overlay_window = None
+        try:
+            overlay_window.destroy()
+        except Exception as e:
+            print(f"Error destroying overlay window: {e}")
+        finally:
+            overlay_window = None
 
 if getattr(sys, 'frozen', False):
     app_path = os.path.dirname(sys.executable)  # Running from .exe
