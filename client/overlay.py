@@ -6,9 +6,6 @@ import threading
 import tkinter as tk
 from tkinter import ttk
 
-overlay_window = None
-overlay_image = None  # Global variable to keep a reference to the image
-
 
 class RoundButton(tk.Canvas):
     def __init__(self, parent, text, command=None, width=200, height=60, bg="#2ecc71", fg="white", **kwargs):
@@ -120,14 +117,34 @@ class SessionOverlay:
         self.running = False
         self.win.withdraw()
 
+        # Initialize the lock screen window
+        self.lock_screen_win = tk.Toplevel(root)
+        self.lock_screen_win.attributes('-fullscreen', True)
+        self.lock_screen_win.configure(bg='black')
+        self.lock_screen_win.attributes('-topmost', True)
+        self.lock_screen_win.protocol("WM_DELETE_WINDOW", lambda: None)
+        self.lock_screen_win.withdraw() # Hide it by default
+
+        # Load the image for the lock screen
+        image_path = r"D:\AG_APPS\golf_simulator\client\image.png"  # Use raw string for Windows paths
+        if not os.path.exists(image_path):
+            print(f"Error: Image file not found at {image_path}")
+            # Handle error, maybe display a blank black screen or a message
+            self.lock_screen_image = None
+        else:
+            self.lock_screen_image = tk.PhotoImage(file=image_path)
+
+        self.lock_screen_label = tk.Label(self.lock_screen_win, image=self.lock_screen_image, bg="black")
+        self.lock_screen_label.pack(expand=True, fill='both')
+
     def start_session(self, minutes):
-        block_input(False)
-        hide_overlay()
         self.remaining = minutes * 60
         self.running = True
         self.win.withdraw()  # Start hidden
         self.update_timer()
-
+        block_input(False) # Uncommented to unblock input when session starts
+        # self.hide_overlay() # This function is removed, so we call the internal method
+        self._hide_lock_screen() # Hide the lock screen when session starts
 
     def update_session(self, minutes, add_type):
         if add_type:
@@ -162,12 +179,35 @@ class SessionOverlay:
         if self.remaining == 0:
             self.label.config(text="TIME'S UP")
             self.win.update()
-            # threading.Timer(5,self.lock_and_close).start()
-            self.win.after(5000, self.lock_and_close)
+            # Instead of a delayed call, immediately lock and show overlay
+            self.end_session()
             return
 
         self.remaining -= 1
         self.win.after(1000, self.update_timer)
+
+    def end_session(self):
+        self.running = False
+        self.win.withdraw()  # Hide the small timer window
+
+        # Immediately lock workstation and block input
+        subprocess.call("rundll32.exe user32.dll,LockWorkStation")
+        block_input(True)
+        # Call the internal method to show the lock screen overlay
+        self._show_lock_screen()
+
+    # New method to show the lock screen
+    def _show_lock_screen(self):
+        self.lock_screen_win.deiconify()  # Show the lock screen window
+        # Ensure it's fullscreen and on top
+        self.lock_screen_win.attributes('-fullscreen', True)
+        self.lock_screen_win.attributes('-topmost', True)
+        self.lock_screen_win.focus_set()
+
+    # New method to hide the lock screen
+    def _hide_lock_screen(self):
+        self.lock_screen_win.withdraw()  # Hide the lock screen window
+        block_input(False)  # Unblock input when hidden
 
     def ask_extension(self):
         if hasattr(self, 'extension_asked') and self.extension_asked:
@@ -256,78 +296,6 @@ class SessionOverlay:
     def extend_session(self, minutes):
         self.remaining += minutes * 60
         self.extension_asked = False
-
-    def end_session(self):
-        self.running = False
-        self.lock_and_close()
-        self.win.withdraw()
-
-    def lock_and_close(self):
-        # subprocess.call("rundll32.exe user32.dll,LockWorkStation")
-        block_input(True)
-        show_overlay()
-        self.app.end_session()
-        self.win.withdraw()
-
-
-def show_overlay():
-    global overlay_window, overlay_image
-
-    # First close any existing overlay window
-    if overlay_window:
-        try:
-            overlay_window.destroy()
-        except:
-            pass
-        overlay_window = None
-
-    # Create new window
-    overlay_window = tk.Toplevel()
-    overlay_window.configure(bg='black')
-    overlay_window.attributes('-topmost', True)
-    overlay_window.title("Session Ended")
-    overlay_window.attributes('-fullscreen', True)
-
-    # Use the app_path to create a relative path to the image
-    image_path = os.path.join(app_path, "image.png")
-
-    try:
-        if os.path.exists(image_path):
-            # Load the image directly with tkinter
-            overlay_image = tk.PhotoImage(file=image_path)
-            img_label = tk.Label(overlay_window, image=overlay_image, bg="black")
-            img_label.image = overlay_image  # Keep a reference
-            img_label.pack(expand=True, fill='both')
-        else:
-            # Fallback text if image not found
-            fallback_label = tk.Label(
-                overlay_window,
-                text="SESSION ENDED",
-                font=("Helvetica", 36, "bold"),
-                fg="white",
-                bg="black"
-            )
-            fallback_label.pack(expand=True, fill='both', pady=50)
-    except Exception as e:
-        print(f"Error loading image: {e}")
-        # Fallback text on error
-        fallback_label = tk.Label(
-            overlay_window,
-            text="SESSION ENDED",
-            font=("Helvetica", 36, "bold"),
-            fg="white",
-            bg="black"
-        )
-        fallback_label.pack(expand=True, fill='both', pady=50)
-def hide_overlay():
-    global overlay_window
-    if overlay_window:
-        try:
-            overlay_window.destroy()
-        except Exception as e:
-            print(f"Error destroying overlay window: {e}")
-        finally:
-            overlay_window = None
 
 if getattr(sys, 'frozen', False):
     app_path = os.path.dirname(sys.executable)  # Running from .exe

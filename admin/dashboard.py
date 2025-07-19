@@ -202,6 +202,25 @@ class AdminDashboard(Frame):
         # Update scroll region after rearranging cards
         self._on_frame_configure()
 
+    def remove_client_by_ip(self, ip_address):
+        for addr, card in list(self.cards.items()):
+            if card.ip == ip_address:
+                print(f"Removing client card for IP: {ip_address}")
+                card.destroy()  # Destroy the tkinter widget
+                del self.cards[addr] # Remove from our dictionary
+                self.rearrange_cards() # Rearrange remaining cards after removal
+                return # Assuming only one client per IP is possible at this point
+
+    def rearrange_cards(self):
+        # This method will rearrange the cards in the grid after one is removed
+        for index, (addr, card) in enumerate(list(self.cards.items())):
+            row = index // 2
+            col = index % 2
+            card.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
+
+        # Update the scroll region after rearranging
+        self._on_frame_configure()
+
     def stop_cleanup(self):
         self.running = False
 

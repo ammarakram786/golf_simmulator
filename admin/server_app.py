@@ -24,6 +24,23 @@ class AdminServer:
         try:
             info = sock.recv(1024).decode()
             info = json.loads(info)
+
+            incoming_ip = info['ip']
+
+            # Check for existing clients with the same IP and remove them
+            clients_to_remove = []
+            for existing_addr, (existing_sock, existing_info) in list(self.clients.items()):
+                if existing_info['ip'] == incoming_ip:
+                    clients_to_remove.append(existing_addr)
+
+            for old_addr in clients_to_remove:
+                print(f"Removing existing client with IP {incoming_ip} at address {old_addr}")
+                old_sock, _ = self.clients[old_addr]
+                if self.ui:
+                    self.ui.remove_client_by_ip(incoming_ip) # Call the new method
+                old_sock.close()
+                del self.clients[old_addr]
+
             self.clients[addr] = (sock, info)
             if self.ui:
                 self.ui.add_client(addr, sock, info)
