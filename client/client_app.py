@@ -120,7 +120,10 @@ class ClientApp:
             try:
                 msg = self.sock.recv(1024).decode()
                 data = json.loads(msg)
+                print('message',msg)
+                print('data',data)
                 if data['cmd'] == 'start':
+                    print('hi Start')
                     self.overlay.start_session(data['minutes'])
                 elif data['cmd'] == 'add':
                     self.overlay.update_session(data['minutes'], add_type=True)

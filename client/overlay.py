@@ -17,7 +17,7 @@ class RoundButton(tk.Canvas):
         self.fg = fg
 
         # Draw the rounded rectangle
-        self.rect = self.create_rounded_rect(2, 2, width-2, height-2, radius=30, fill=bg, outline=bg)
+        self.rect = self.create_rounded_rect(2, 2, width - 2, height - 2, radius=30, fill=bg, outline=bg)
 
         # Add text in the center
         self.text = self.create_text(
@@ -57,14 +57,16 @@ class RoundButton(tk.Canvas):
     def _on_enter(self, event):
         # Darken the color on hover
         r, g, b = self.winfo_rgb(self.bg)
-        darker = f'#{int(r/256*0.8):02x}{int(g/256*0.8):02x}{int(b/256*0.8):02x}'
+        darker = f'#{int(r / 256 * 0.8):02x}{int(g / 256 * 0.8):02x}{int(b / 256 * 0.8):02x}'
         self.itemconfig(self.rect, fill=darker, outline=darker)
 
     def _on_leave(self, event):
         self.itemconfig(self.rect, fill=self.bg, outline=self.bg)
 
+
 def block_input(block=True):
     ctypes.windll.user32.BlockInput(block)
+
 
 class SessionOverlay:
     def __init__(self, root, app):
@@ -76,7 +78,7 @@ class SessionOverlay:
         self.win.geometry("300x200")  # Smaller window size
         self.win.overrideredirect(True)
         self.win.attributes('-topmost', True)
-        
+
         # Position window in bottom right corner
         screen_width = self.win.winfo_screenwidth()
         screen_height = self.win.winfo_screenheight()
@@ -88,7 +90,7 @@ class SessionOverlay:
         x = screen_width - window_width - 20
         y = 20
         self.win.geometry(f"{window_width}x{window_height}+{x}+{y}")
-        
+
         # Minty theme colors
         self.colors = {
             'primary': '#2ecc71',  # Mint green
@@ -98,22 +100,22 @@ class SessionOverlay:
             'text': '#ffffff',  # Dark blue-gray
             'light_text': '#ffffff'  # White text
         }
-        
+
         # Configure styles
         self.style = ttk.Style()
-        self.style.configure('Minty.TLabel', 
-                           font=('Helvetica', 32, 'bold'),  # Smaller font size
-                           background=self.colors['background'],
-                           foreground=self.colors['text'])
+        self.style.configure('Minty.TLabel',
+                             font=('Helvetica', 32, 'bold'),  # Smaller font size
+                             background=self.colors['background'],
+                             foreground=self.colors['text'])
 
         # Main timer label
-        self.label = tk.Label(self.win, 
-                            text="",
-                            font=("Helvetica", 32, "bold"),  # Smaller font size
-                            fg=self.colors['text'],
-                            bg=self.colors['background'])
+        self.label = tk.Label(self.win,
+                              text="",
+                              font=("Helvetica", 32, "bold"),  # Smaller font size
+                              fg=self.colors['text'],
+                              bg=self.colors['background'])
         self.label.pack(expand=True, fill='both')
-        
+
         self.running = False
         self.win.withdraw()
 
@@ -123,10 +125,10 @@ class SessionOverlay:
         self.lock_screen_win.configure(bg='black')
         self.lock_screen_win.attributes('-topmost', True)
         self.lock_screen_win.protocol("WM_DELETE_WINDOW", lambda: None)
-        self.lock_screen_win.withdraw() # Hide it by default
+        self.lock_screen_win.withdraw()  # Hide it by default
 
         # Load the image for the lock screen
-        image_path = r"D:\AG_APPS\golf_simulator\client\image.png"  # Use raw string for Windows paths
+        image_path = os.path.join(os.path.dirname(__file__), "image.png")
         if not os.path.exists(image_path):
             print(f"Error: Image file not found at {image_path}")
             # Handle error, maybe display a blank black screen or a message
@@ -138,15 +140,17 @@ class SessionOverlay:
         self.lock_screen_label.pack(expand=True, fill='both')
 
     def start_session(self, minutes):
+        print(f"Starting session for {minutes} minutes")
         self.remaining = minutes * 60
         self.running = True
         self.win.withdraw()  # Start hidden
         self.update_timer()
-        block_input(False) # Uncommented to unblock input when session starts
+        block_input(False)  # Uncommented to unblock input when session starts
         # self.hide_overlay() # This function is removed, so we call the internal method
-        self._hide_lock_screen() # Hide the lock screen when session starts
+        self._hide_lock_screen()  # Hide the lock screen when session starts
 
     def update_session(self, minutes, add_type):
+        print('remaining:', self.remaining)
         if add_type:
             if self.remaining <= 0:
                 self.start_session(minutes)
@@ -187,11 +191,12 @@ class SessionOverlay:
         self.win.after(1000, self.update_timer)
 
     def end_session(self):
+        self.remaining = 0
         self.running = False
         self.win.withdraw()  # Hide the small timer window
 
         # Immediately lock workstation and block input
-        subprocess.call("rundll32.exe user32.dll,LockWorkStation")
+        # subprocess.call("rundll32.exe user32.dll,LockWorkStation")
         block_input(True)
         # Call the internal method to show the lock screen overlay
         self._show_lock_screen()
@@ -203,6 +208,9 @@ class SessionOverlay:
         self.lock_screen_win.attributes('-fullscreen', True)
         self.lock_screen_win.attributes('-topmost', True)
         self.lock_screen_win.focus_set()
+        # run method hide_lock_screen after 5 seconds
+        self.lock_screen_win.after(5000, self._hide_lock_screen)
+        block_input(False)# Hide after 5 seconds
 
     # New method to hide the lock screen
     def _hide_lock_screen(self):
@@ -218,7 +226,7 @@ class SessionOverlay:
         extension_win.title("Extend Session Duration")
         extension_win.geometry("800x600")  # Increased window size
         extension_win.configure(bg=self.colors['background'])
-        
+
         # Make window appear in center
         extension_win.update_idletasks()
         width = extension_win.winfo_width()
@@ -242,9 +250,9 @@ class SessionOverlay:
         options_frame.pack(pady=20)  # Increased padding
 
         var = tk.IntVar(value=30)
-        options = [("6 MINUTES", 1), ("30 MINUTES", 30), ("1 HOUR", 60), 
-                  ("1.5 HOURS", 90), ("2 HOURS", 120)]
-        
+        options = [("6 MINUTES", 1), ("30 MINUTES", 30), ("1 HOUR", 60),
+                   ("1.5 HOURS", 90), ("2 HOURS", 120)]
+
         for label, val in options:
             rb = tk.Radiobutton(
                 options_frame,
@@ -279,7 +287,7 @@ class SessionOverlay:
             command=confirm,
             bg=self.colors['primary'],
             width=200,  # Increased for touch
-            height=60   # Increased for touch
+            height=60  # Increased for touch
         )
         confirm_btn.pack(side="left", padx=15)  # Increased padding
 
@@ -289,13 +297,14 @@ class SessionOverlay:
             command=close,
             bg=self.colors['warning'],
             width=200,  # Increased for touch
-            height=60   # Increased for touch
+            height=60  # Increased for touch
         )
         cancel_btn.pack(side="left", padx=15)  # Increased padding
 
     def extend_session(self, minutes):
         self.remaining += minutes * 60
         self.extension_asked = False
+
 
 if getattr(sys, 'frozen', False):
     app_path = os.path.dirname(sys.executable)  # Running from .exe
