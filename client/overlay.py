@@ -209,8 +209,9 @@ class SessionOverlay:
         self.lock_screen_win.attributes('-topmost', True)
         self.lock_screen_win.focus_set()
         # run method hide_lock_screen after 5 seconds
-        self.lock_screen_win.after(5000, self._hide_lock_screen)
-        block_input(False)# Hide after 5 seconds
+        # for testing Purpose
+        # self.lock_screen_win.after(5000, self._hide_lock_screen)
+        # block_input(False)# Hide after 5 seconds
 
     # New method to hide the lock screen
     def _hide_lock_screen(self):
