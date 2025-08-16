@@ -124,9 +124,10 @@ class ClientCard(Frame):
               font=("Helvetica", 12),  # Increased from 10
               foreground=self.colors['primary'],
               background=self.colors['card_bg']).pack(side="left", padx=(0, 3))  # Increased padding
-              
-        Label(name_ip_frame, 
-              text=f"{name.upper()}", 
+
+        Label(name_ip_frame,
+              text=f"{name.upper()}",
+              font=("Helvetica", 28, "bold"),  # Match the timer font size
               style="Title.TLabel").pack(side="left", padx=(0, 15))  # Increased padding
 
         Label(name_ip_frame, 

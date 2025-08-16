@@ -96,12 +96,13 @@ def block_input(block=True):
 
 
 class ClientApp:
-    def __init__(self, server_ip, port):
+    def __init__(self, server_ip, port, name):
         self.server_ip = server_ip
         self.port = port
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.overlay = None
         self.root = None
+        self.name = name
 
     def connect_to_server(self):
         while True:
@@ -111,9 +112,9 @@ class ClientApp:
             except ConnectionRefusedError:
                 print("Server not available, retrying in 3 seconds...")
                 time.sleep(3)
-        name = platform.node()
+        # name = platform.node()
         ip = socket.gethostbyname(socket.gethostname())
-        self.sock.send(json.dumps({"name": name, "ip": ip}).encode())
+        self.sock.send(json.dumps({"name": self.name, "ip": ip}).encode())
 
     def listen(self):
         while True:

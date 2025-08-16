@@ -4,6 +4,7 @@ import sys
 
 from client.client_app import ClientApp
 
+
 # Determine app path whether frozen (exe) or not
 if getattr(sys, 'frozen', False):
     app_path = os.path.dirname(sys.executable)  # Running from .exe
@@ -18,7 +19,8 @@ config.read(config_path)
 # Get Server IP and Port
 server_ip = config.get('Client', 'server')
 server_port = config.getint('Client', 'port')
+name = config.get('Client', 'name')
 
 # Initialize and run the client application
-app = ClientApp(server_ip, server_port)
+app = ClientApp(server_ip, server_port, name)
 app.run()

@@ -167,7 +167,7 @@ class SessionOverlay:
             return
         mins, secs = divmod(self.remaining, 60)
 
-        if self.remaining <= 2 * 60:
+        if self.remaining <= 5 * 60:
             self.win.deiconify()  # Show window
             self.win.configure(bg=self.colors['background'])
             self.win.attributes('-transparent', self.colors['background'])  # Make window transparent
