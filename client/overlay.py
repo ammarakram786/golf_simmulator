@@ -79,15 +79,13 @@ class SessionOverlay:
         self.win.overrideredirect(True)
         self.win.attributes('-topmost', True)
 
-        # Position window in bottom right corner
+        # Position window in top right corner, but a bit more left
         screen_width = self.win.winfo_screenwidth()
         screen_height = self.win.winfo_screenheight()
         window_width = 300
         window_height = 200
-        # x = screen_width - window_width - 20  # 20 pixels from right edge
-        # y = screen_height - window_height - 40  # 40 pixels from bottom edge
 
-        x = screen_width - window_width - 20
+        x = screen_width - window_width - 150  # 150 pixels from right edge (more left than 80)
         y = 20
         self.win.geometry(f"{window_width}x{window_height}+{x}+{y}")
 
@@ -128,16 +126,84 @@ class SessionOverlay:
         self.lock_screen_win.withdraw()  # Hide it by default
 
         # Load the image for the lock screen
-        image_path = os.path.join(os.path.dirname(__file__), "image.png")
+        # Look for image in the same directory as the executable
+        # Look for image in the same directory as the executable
+        if getattr(sys, 'frozen', False):
+            # Running from .exe - look in executable directory
+            exe_dir = os.path.dirname(sys.executable)
+            image_path = os.path.join(exe_dir, "image.gif")  # GIF priority
+            # Also try .png extension as fallback
+            if not os.path.exists(image_path):
+                image_path = os.path.join(exe_dir, "image.png")
+        else:
+            # Running from .py script - look in script directory
+            image_path = os.path.join(os.path.dirname(__file__), "image.gif")  # GIF priority
+            # Also try .png extension as fallback
+            if not os.path.exists(image_path):
+                image_path = os.path.join(os.path.dirname(__file__), "image.png")
+        
         if not os.path.exists(image_path):
-            print(f"Error: Image file not found at {image_path}")
+            print(f"Error: Image file not found. Tried: {image_path}")
+            print("Please place 'image.png' or 'image.gif' in the same directory as the executable.")
             # Handle error, maybe display a blank black screen or a message
             self.lock_screen_image = None
         else:
-            self.lock_screen_image = tk.PhotoImage(file=image_path)
+            # Load and resize image to fit screen
+            from PIL import Image, ImageTk
+            try:
+                # Load image with PIL
+                pil_image = Image.open(image_path)
+                
+                # Get screen dimensions
+                screen_width = self.lock_screen_win.winfo_screenwidth()
+                screen_height = self.lock_screen_win.winfo_screenheight()
+                
+                # Check if it's a GIF (animated)
+                if hasattr(pil_image, 'n_frames') and pil_image.n_frames > 1:
+                    print(f"Animated GIF detected with {pil_image.n_frames} frames")
+                    # For GIFs, resize each frame to fit screen
+                    frames = []
+                    for frame_idx in range(pil_image.n_frames):
+                        pil_image.seek(frame_idx)
+                        # Convert to RGB if necessary (GIFs can have transparency)
+                        if pil_image.mode in ('RGBA', 'LA', 'P'):
+                            frame = pil_image.convert('RGBA').convert('RGB')
+                        else:
+                            frame = pil_image.convert('RGB')
+                        
+                        # Resize frame to fit screen
+                        frame = frame.resize((screen_width, screen_height), Image.Resampling.LANCZOS)
+                        frames.append(ImageTk.PhotoImage(frame))
+                    
+                    self.lock_screen_frames = frames
+                    self.current_frame = 0
+                    self.lock_screen_image = frames[0]  # Start with first frame
+                    self.is_gif = True
+                    print(f"GIF loaded and resized to {screen_width}x{screen_height}")
+                else:
+                    # Static image - resize to fit screen
+                    pil_image = pil_image.resize((screen_width, screen_height), Image.Resampling.LANCZOS)
+                    self.lock_screen_image = ImageTk.PhotoImage(pil_image)
+                    self.is_gif = False
+                    print(f"Static image loaded and resized to {screen_width}x{screen_height}")
+                    
+            except ImportError:
+                # Fallback to tkinter if PIL is not available
+                print("PIL not available, using original image size")
+                self.lock_screen_image = tk.PhotoImage(file=image_path)
+                self.is_gif = False
+            except Exception as e:
+                print(f"Error processing image: {e}")
+                self.lock_screen_image = None
+                self.is_gif = False
 
         self.lock_screen_label = tk.Label(self.lock_screen_win, image=self.lock_screen_image, bg="black")
         self.lock_screen_label.pack(expand=True, fill='both')
+        
+        # Initialize GIF animation variables
+        self.is_gif = getattr(self, 'is_gif', False)
+        self.lock_screen_frames = getattr(self, 'lock_screen_frames', [])
+        self.current_frame = getattr(self, 'current_frame', 0)
 
     def start_session(self, minutes):
         print(f"Starting session for {minutes} minutes")
@@ -208,6 +274,11 @@ class SessionOverlay:
         self.lock_screen_win.attributes('-fullscreen', True)
         self.lock_screen_win.attributes('-topmost', True)
         self.lock_screen_win.focus_set()
+        
+        # Start GIF animation if it's a GIF
+        if self.is_gif and self.lock_screen_frames:
+            self._animate_gif()
+        
         # run method hide_lock_screen after 5 seconds
         # for testing Purpose
         # self.lock_screen_win.after(5000, self._hide_lock_screen)
@@ -217,6 +288,21 @@ class SessionOverlay:
     def _hide_lock_screen(self):
         self.lock_screen_win.withdraw()  # Hide the lock screen window
         block_input(False)  # Unblock input when hidden
+    
+    # Method to animate GIF frames
+    def _animate_gif(self):
+        if not self.is_gif or not self.lock_screen_frames:
+            return
+            
+        # Update to next frame
+        self.current_frame = (self.current_frame + 1) % len(self.lock_screen_frames)
+        
+        # Update the label with new frame
+        self.lock_screen_label.configure(image=self.lock_screen_frames[self.current_frame])
+        
+        # Schedule next frame (typical GIF frame rate is 10-15 fps, so ~100ms delay)
+        if self.lock_screen_win.winfo_exists():
+            self.lock_screen_win.after(100, self._animate_gif)
 
     def ask_extension(self):
         if hasattr(self, 'extension_asked') and self.extension_asked:
