@@ -79,14 +79,18 @@ class SessionOverlay:
         self.win.overrideredirect(True)
         self.win.attributes('-topmost', True)
 
-        # Position window in top right corner, but a bit more left
-        screen_width = self.win.winfo_screenwidth()
-        screen_height = self.win.winfo_screenheight()
+        # Position window on the left side and 2/3 below the screen
         window_width = 300
         window_height = 200
+        self.win.geometry(f"{window_width}x{window_height}")
+        
+        # Wait for window to be created before getting screen dimensions
+        self.win.update_idletasks()
+        screen_width = self.win.winfo_screenwidth()
+        screen_height = self.win.winfo_screenheight()
 
-        x = screen_width - window_width - 150  # 150 pixels from right edge (more left than 80)
-        y = 20
+        x = 0  # 10 pixels from left edge (more left)
+        y = int(screen_height * 2/3) - window_height//2 - 80  # 2/3 down the screen, but 50 pixels above
         self.win.geometry(f"{window_width}x{window_height}+{x}+{y}")
 
         # Minty theme colors
@@ -106,13 +110,14 @@ class SessionOverlay:
                              background=self.colors['background'],
                              foreground=self.colors['text'])
 
-        # Main timer label
+                # Main timer label
         self.label = tk.Label(self.win,
-                              text="",
-                              font=("Helvetica", 32, "bold"),  # Smaller font size
-                              fg=self.colors['text'],
-                              bg=self.colors['background'])
-        self.label.pack(expand=True, fill='both')
+                               text="",
+                               font=("Helvetica", 32, "bold"),  # Smaller font size
+                               fg=self.colors['text'],
+                               bg=self.colors['background'],
+                               anchor="w")  # Anchor text to west (left side)
+        self.label.pack(expand=True, fill='both', padx=(20, 0))  # Add left padding
 
         self.running = False
         self.win.withdraw()
@@ -124,6 +129,10 @@ class SessionOverlay:
         self.lock_screen_win.attributes('-topmost', True)
         self.lock_screen_win.protocol("WM_DELETE_WINDOW", lambda: None)
         self.lock_screen_win.withdraw()  # Hide it by default
+
+        # Animation tracking variables
+        self.animation_id = None
+        self.is_animating = False
 
         # Load the image for the lock screen
         # Look for image in the same directory as the executable
@@ -269,6 +278,9 @@ class SessionOverlay:
 
     # New method to show the lock screen
     def _show_lock_screen(self):
+        # Stop any existing animation before starting new one
+        self._stop_animation()
+        
         self.lock_screen_win.deiconify()  # Show the lock screen window
         # Ensure it's fullscreen and on top
         self.lock_screen_win.attributes('-fullscreen', True)
@@ -288,6 +300,15 @@ class SessionOverlay:
     def _hide_lock_screen(self):
         self.lock_screen_win.withdraw()  # Hide the lock screen window
         block_input(False)  # Unblock input when hidden
+        # Stop any running animations
+        self._stop_animation()
+    
+    # Method to stop GIF animation
+    def _stop_animation(self):
+        if self.animation_id and self.is_animating:
+            self.lock_screen_win.after_cancel(self.animation_id)
+            self.animation_id = None
+            self.is_animating = False
     
     # Method to animate GIF frames
     def _animate_gif(self):
@@ -302,7 +323,8 @@ class SessionOverlay:
         
         # Schedule next frame (typical GIF frame rate is 10-15 fps, so ~100ms delay)
         if self.lock_screen_win.winfo_exists():
-            self.lock_screen_win.after(100, self._animate_gif)
+            self.animation_id = self.lock_screen_win.after(100, self._animate_gif)
+            self.is_animating = True
 
     def ask_extension(self):
         if hasattr(self, 'extension_asked') and self.extension_asked:
