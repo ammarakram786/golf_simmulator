@@ -43,7 +43,13 @@ class AdminServer:
 
             self.clients[addr] = (sock, info)
             if self.ui:
-                self.ui.add_client(addr, sock, info)
+                # Check if this is a reconnection (same IP, different address)
+                if any(existing_info['ip'] == incoming_ip for existing_addr, (_, existing_info) in self.clients.items() if existing_addr != addr):
+                    # This is a reconnection - handle it specially
+                    self.ui.handle_client_reconnection(incoming_ip)
+                else:
+                    # This is a new client
+                    self.ui.add_client(addr, sock, info)
             threading.Thread(target=self.listen_client_messages, args=(sock, addr), daemon=True).start()
         except Exception as e:
             print("Client error:", e)

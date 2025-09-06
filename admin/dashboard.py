@@ -124,6 +124,9 @@ class AdminDashboard(Frame):
             anchor="nw",
             width=self.canvas.winfo_width()
         )
+        
+        # Bind window resize events for responsive behavior
+        self.bind('<Configure>', self._on_window_resize)
 
         # Make the canvas expand to fill the frame
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
@@ -140,16 +143,82 @@ class AdminDashboard(Frame):
         self.cards_frame = Frame(self.scrollable_frame, style="Card.TFrame")
         self.cards_frame.pack(fill="both", expand=True, padx=10, pady=10)
         
-        # Configure grid columns to have equal weight
-        self.cards_frame.grid_columnconfigure(0, weight=1)
-        self.cards_frame.grid_columnconfigure(1, weight=1)
+        # Configure grid columns to have equal weight and be responsive
+        # Maximum 2 columns with minimum size to ensure all buttons and content are visible
+        self.cards_frame.grid_columnconfigure(0, weight=1, minsize=400)
+        self.cards_frame.grid_columnconfigure(1, weight=1, minsize=400)
+        
+        # Configure grid rows to be responsive
+        self.cards_frame.grid_rowconfigure(0, weight=1)
+        self.cards_frame.grid_rowconfigure(1, weight=1)
+        self.cards_frame.grid_rowconfigure(2, weight=1)
+        self.cards_frame.grid_rowconfigure(3, weight=1)
+        self.cards_frame.grid_rowconfigure(4, weight=1)
 
         # Start time update
         self.update_time()
+        
+        # Set initial responsive layout
+        self.after(100, self._adjust_card_layout)
 
     def _on_canvas_configure(self, event):
         # Update the width of the frame to match the canvas
         self.canvas.itemconfig(self.canvas_frame, width=event.width)
+        
+    def _on_window_resize(self, event):
+        """Handle window resize events for responsive layout"""
+        # Update canvas width when window is resized
+        if event.width > 1:  # Avoid invalid resize events
+            self.canvas.itemconfig(self.canvas_frame, width=event.width - 50)  # Account for scrollbar
+            
+            # Rearrange cards to fit new layout
+            self._adjust_card_layout()
+            
+    def _adjust_card_layout(self):
+        """Adjust card layout based on current window size"""
+        if not self.cards:
+            return
+            
+        # Get current window dimensions
+        window_width = self.winfo_width()
+        
+        # Determine number of columns based on window width
+        # Maximum of 2 columns to ensure proper card visibility
+        if window_width < 900:
+            # Small window: single column (minimum 400px width)
+            columns = 1
+            card_width = max(400, window_width - 100)  # Account for padding and scrollbar
+        else:
+            # Medium and large windows: maximum 2 columns (minimum 400px each)
+            columns = 2
+            card_width = max(400, (window_width - 100) // 2)
+            
+        # Update grid configuration with proper minimum sizes
+        for i in range(columns):
+            self.cards_frame.grid_columnconfigure(i, weight=1, minsize=card_width)
+            
+        # Rearrange cards with new column count
+        self._rearrange_cards_responsive(columns)
+        
+    def _rearrange_cards_responsive(self, columns):
+        """Rearrange cards based on responsive column count"""
+        if not self.cards:
+            return
+            
+        # Sort cards alphabetically
+        sorted_cards = sorted(self.cards.items(), key=lambda x: x[1].name.upper())
+        
+        # Position cards in responsive grid with proper sizing
+        for index, (addr, card) in enumerate(sorted_cards):
+            row = index // columns
+            col = index % columns
+            card.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
+            
+            # Ensure card maintains minimum size for visibility
+            card.grid_propagate(False)  # Prevent card from shrinking
+            
+        # Update scroll region
+        self._on_frame_configure()
 
     def _on_mousewheel(self, event):
         self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
@@ -161,17 +230,26 @@ class AdminDashboard(Frame):
 
     def add_client(self, addr, sock, info):
         if addr in self.cards:
+            # Client reconnected - just update status, keep position
             card = self.cards[addr]
             card.update_status("IDLE", connected=True)
         else:
+            # New client - add and maintain alphabetical order
             card = ClientCard(self.cards_frame, info['name'], info['ip'], sock, self.server)
-            # Calculate the position in the grid
-            row = len(self.cards) // 2
-            col = len(self.cards) % 2
-            card.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
             self.cards[addr] = card
+            self.rearrange_cards_alphabetically()
             # Update scroll region after adding new card
             self._on_frame_configure()
+
+
+
+    def rearrange_cards_alphabetically(self):
+        """Rearrange all cards in alphabetical order (BAY 1, BAY 2, BAY 3, etc.)"""
+        if not self.cards:
+            return
+            
+        # Use responsive layout instead of fixed 2-column layout
+        self._adjust_card_layout()
 
     # def remove_disconnected_clients(self):
     #     for addr, card in list(self.cards.items()):
@@ -193,14 +271,8 @@ class AdminDashboard(Frame):
                 card.destroy()
                 del self.cards[addr]
 
-        # Rearrange the remaining cards
-        for index, card in enumerate(self.cards.values()):
-            row = index // 2
-            col = index % 2
-            card.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
-
-        # Update scroll region after rearranging cards
-        self._on_frame_configure()
+        # Rearrange the remaining cards alphabetically
+        self.rearrange_cards_alphabetically()
 
     def remove_client_by_ip(self, ip_address):
         for addr, card in list(self.cards.items()):
@@ -208,18 +280,15 @@ class AdminDashboard(Frame):
                 print(f"Removing client card for IP: {ip_address}")
                 card.destroy()  # Destroy the tkinter widget
                 del self.cards[addr] # Remove from our dictionary
-                self.rearrange_cards() # Rearrange remaining cards after removal
+                self.rearrange_cards_alphabetically() # Rearrange remaining cards alphabetically after removal
                 return # Assuming only one client per IP is possible at this point
 
     def rearrange_cards(self):
         # This method will rearrange the cards in the grid after one is removed
-        for index, (addr, card) in enumerate(list(self.cards.items())):
-            row = index // 2
-            col = index % 2
-            card.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
+        # Now uses alphabetical ordering
+        self.rearrange_cards_alphabetically()
 
-        # Update the scroll region after rearranging
-        self._on_frame_configure()
+
 
     def stop_cleanup(self):
         self.running = False
