@@ -5,7 +5,7 @@ from ttkbootstrap import Style
 
 
 class RoundButton(tk.Canvas):
-    def __init__(self, parent, text, command=None, width=200, height=60, bg="#2ecc71", fg="#000000",hover_bg="#950606", **kwargs):
+    def __init__(self, parent, text, command=None, width=200, height=60, bg="#2ecc71", fg="#000000", hover_bg="#950606", **kwargs):
         super().__init__(parent, width=width, height=height, highlightthickness=0, **kwargs)
         self.command = command
         self.width = width
@@ -13,17 +13,17 @@ class RoundButton(tk.Canvas):
         self.bg = bg
         self.fg = fg
         self.hover_bg = hover_bg
-        # fg = "#000000"
-        # fg = "#000000"   #8cc751
 
-        # Draw the rectangular button with no visible outline
-        self.rect = self.create_rectangle(0, 0, width, height, fill=bg, outline=bg)
+        # Draw rounded rectangle button with very minimal radius
+        radius = min(2, height // 12)  # Very minimal border radius - almost square
+        self.rect = self.create_round_rectangle(0, 0, width, height, radius, fill=bg, outline=bg)
 
         # Add text in the center
+        font_size = max(8, min(16, width // 8))  # Dynamic font size based on button width
         self.text = self.create_text(
             width // 2, height // 2,
             text=text.upper(),  # Convert text to uppercase
-            font=("Helvetica", 18, "bold"),  # Increased font size for touch
+            font=("Helvetica", font_size, "bold"),
             fill=fg
         )
 
@@ -35,6 +35,28 @@ class RoundButton(tk.Canvas):
         self.tag_bind(self.rect, "<Leave>", self._on_leave)
         self.tag_bind(self.text, "<Leave>", self._on_leave)
 
+    def create_round_rectangle(self, x1, y1, x2, y2, radius, **kwargs):
+        """Create a rounded rectangle"""
+        points = []
+        # Top edge
+        points.extend([x1 + radius, y1, x2 - radius, y1])
+        # Top right corner
+        points.extend([x2, y1, x2, y1 + radius])
+        # Right edge
+        points.extend([x2, y1 + radius, x2, y2 - radius])
+        # Bottom right corner
+        points.extend([x2, y2, x2 - radius, y2])
+        # Bottom edge
+        points.extend([x2 - radius, y2, x1 + radius, y2])
+        # Bottom left corner
+        points.extend([x1, y2, x1, y2 - radius])
+        # Left edge
+        points.extend([x1, y2 - radius, x1, y1 + radius])
+        # Top left corner
+        points.extend([x1, y1, x1 + radius, y1])
+        
+        return self.create_polygon(points, smooth=True, **kwargs)
+
     def _on_click(self, event):
         if self.command:
             self.command()
@@ -45,57 +67,93 @@ class RoundButton(tk.Canvas):
     def _on_enter(self, event):
         self.itemconfig(self.rect, fill=self.hover_bg, outline=self.hover_bg)
 
-
     def _on_leave(self, event):
         self.itemconfig(self.rect, fill=self.bg, outline=self.bg)
 
 
 class ClientCard(Frame):
     def __init__(self, master, name, ip, sock, server):
-        super().__init__(master, padding=20)  # Increased padding
+        super().__init__(master, padding=20)
         self.name, self.ip, self.sock, self.server = name, ip, sock, server
         self.remaining_time = 0
 
-        # Minty theme colors with additional button colors
+        # New color palette based on design specifications
         self.colors = {
-            'primary': '#D3F36B',    # Mint green
-            'secondary': '#272bae',  # Darker mint
-            'warning': '#d65237',    # Red for warning
-            'background': '#ffffff', # White (This is likely for the main window, not the card)
-            'text': '#ffffff',      # White text
-            'light_text': '#ffffff', # White text
-            'border': '#e0e0e0',    # Light gray for borders
-            'success': '#2ecc71',   # Green for success
-            'error': '#e74c3c',     # Red for error
-            'info': '#3498db',      # Blue for info
+            'primary': '#4CAF50',    # Green for active/start buttons
+            'secondary': '#43A047',  # Darker green for hover
+            'warning': '#E53935',    # Red for lock/error
+            'background': '#1E1E1E', # Dark charcoal gray main background
+            'text': '#FFFFFF',      # White main text
+            'light_text': '#CCCCCC', # Light gray secondary text
+            'border': '#2A2A2A',    # Card border color
+            'success': '#4CAF50',   # Green for success/active
+            'error': '#E53935',     # Red for error/locked
+            'info': '#FFB300',      # Amber yellow for time buttons
             'purple': '#9b59b6',    # Purple for special actions
-            'orange': '#e67e22',    # Orange for warnings
-            'card_bg': '#1a1a1a' ,  # Black for card background
-            #   #FF0000
+            'orange': '#FFA000',    # Darker amber for hover
+            'card_bg': '#2A2A2A',   # Slightly lighter gray for card background
+            'timer_text': '#FFFFFF', # White for timer numbers
+            'timer_label': '#AAAAAA' # Light gray for "Remaining" label
         }
 
         # Configure styles
         style = Style()
         
-        # Card styles
+        # Card styles with rounded corners
         style.configure("Card.TFrame",
                        background=self.colors['card_bg'],
                        relief="flat",
                        borderwidth=1)
         
-        # Label styles with increased font sizes for touch
+        # Create a custom rounded frame
+        self.configure(style="Card.TFrame", padding=20)
+        self.configure(width=420, height=320)  # Wider and shorter for more rectangular shape
+        self.pack_propagate(False)  # Prevent card from resizing
+        
+        # Add rounded corners effect using a canvas overlay
+        self.canvas_overlay = tk.Canvas(self, highlightthickness=0, bg=self.colors['card_bg'])
+        self.canvas_overlay.place(x=0, y=0, relwidth=1, relheight=1)
+        
+        # Add the create_round_rectangle method to canvas
+        def create_round_rectangle(canvas, x1, y1, x2, y2, radius, **kwargs):
+            points = []
+            # Top edge
+            points.extend([x1 + radius, y1, x2 - radius, y1])
+            # Top right corner
+            points.extend([x2, y1, x2, y1 + radius])
+            # Right edge
+            points.extend([x2, y1 + radius, x2, y2 - radius])
+            # Bottom right corner
+            points.extend([x2, y2, x2 - radius, y2])
+            # Bottom edge
+            points.extend([x2 - radius, y2, x1 + radius, y2])
+            # Bottom left corner
+            points.extend([x1, y2, x1, y2 - radius])
+            # Left edge
+            points.extend([x1, y2 - radius, x1, y1 + radius])
+            # Top left corner
+            points.extend([x1, y1, x1 + radius, y1])
+            return canvas.create_polygon(points, smooth=True, **kwargs)
+        
+        # Draw rounded rectangle background with very subtle radius
+        create_round_rectangle(self.canvas_overlay, 0, 0, 420, 320, 3, 
+                              fill=self.colors['card_bg'], 
+                              outline=self.colors['border'], 
+                              width=1)
+        
+        # Label styles
         style.configure("Title.TLabel",
-                       font=("Helvetica", 14, "bold"),  # Increased from 12
+                       font=("Helvetica", 14, "bold"),
                        foreground=self.colors['text'],
                        background=self.colors['card_bg'])
         
         style.configure("Subtitle.TLabel",
-                       font=("Helvetica", 12),  # Increased from 10
+                       font=("Helvetica", 12),
                        foreground=self.colors['text'],
                        background=self.colors['card_bg'])
         
         style.configure("Status.TLabel",
-                       font=("Helvetica", 14, "bold"),  # Increased from 12
+                       font=("Helvetica", 14, "bold"),
                        background=self.colors['card_bg'])
         
         style.configure("Success.TLabel",
@@ -104,232 +162,200 @@ class ClientCard(Frame):
         style.configure("Error.TLabel",
                        foreground=self.colors['error'])
 
-        # Apply card style
-        self.configure(style="Card.TFrame", padding=15)  # Increased padding from 10
+        # Apply card style with fixed size
+        self.configure(style="Card.TFrame", padding=20)
+        self.configure(width=400, height=350)  # Further increased height to fit all buttons
+        self.pack_propagate(False)  # Prevent card from resizing
 
         # Main container frame
         main_frame = Frame(self, style="Card.TFrame")
-        main_frame.pack(fill="x", expand=True)
+        main_frame.pack(fill="both", expand=True)
 
-        # Left column - Client info
-        left_column = Frame(main_frame, style="Card.TFrame")
-        left_column.pack(side="left", fill="y", padx=(0, 15))  # Increased padding
+        # Header frame with Bay name and status
+        header_frame = Frame(main_frame, style="Card.TFrame")
+        header_frame.pack(fill="x", pady=(0, 15))
 
-        # Name and IP in a single row
-        name_ip_frame = Frame(left_column, style="Card.TFrame")
-        name_ip_frame.pack(fill="x", pady=(0, 5))  # Increased padding
+        # Bay name on the left
+        bay_name_label = Label(header_frame,
+                              text=f"{name.upper()}",
+                              font=("Helvetica", 20, "bold"),
+                              foreground=self.colors['text'],
+                              background=self.colors['card_bg'])
+        bay_name_label.pack(side="left")
 
-        Label(name_ip_frame, 
-              text="●",
-              font=("Helvetica", 12),  # Increased from 10
-              foreground=self.colors['primary'],
-              background=self.colors['card_bg']).pack(side="left", padx=(0, 3))  # Increased padding
+        # Small unlock button at top right
+        unlock_btn = RoundButton(header_frame,
+                               text="🔓",
+                               command=self.unlock_computer,
+                               bg=self.colors['card_bg'],
+                               fg=self.colors['text'],
+                               hover_bg=self.colors['light_text'],
+                               width=25,
+                               height=25)
+        unlock_btn.pack(side="right", padx=(5, 0))
 
-        Label(name_ip_frame,
-              text=f"{name.upper()}",
-              font=("Helvetica", 28, "bold"),  # Match the timer font size
-              style="Title.TLabel").pack(side="left", padx=(0, 15))  # Increased padding
+        # Status indicator with lock icon in top right
+        status_frame = Frame(header_frame, style="Card.TFrame")
+        status_frame.pack(side="right")
+        
+        self.status = Label(status_frame,
+                           text="ACTIVE",
+                           font=("Helvetica", 10, "bold"),
+                           foreground=self.colors['error'],
+                           background=self.colors['card_bg'])
+        self.status.pack(side="left", padx=(0, 5))
+        
+        # Lock icon
+        lock_icon = Label(status_frame,
+                         text="🔒",
+                         font=("Helvetica", 12),
+                         foreground=self.colors['text'],
+                         background=self.colors['card_bg'])
+        lock_icon.pack(side="left")
 
-        Label(name_ip_frame, 
-              text="●",
-              font=("Helvetica", 12),  # Increased from 10
-              foreground=self.colors['info'],
-              background=self.colors['card_bg']).pack(side="left", padx=(0, 3))  # Increased padding
-              
-        Label(name_ip_frame, 
-              text=f"{ip}", 
-              style="Subtitle.TLabel").pack(side="left")
+        # IP address
+        ip_label = Label(main_frame,
+                        text=f"IP: {ip}",
+                        font=("Helvetica", 12),
+                        foreground=self.colors['light_text'],
+                        background=self.colors['card_bg'])
+        ip_label.pack(anchor="w", pady=(0, 15))
 
-        # Timer and Status in a single row
-        timer_status_frame = Frame(left_column, style="Card.TFrame")
-        timer_status_frame.pack(fill="x", pady=(0, 5))  # Increased padding
+        # Timer section
+        timer_frame = Frame(main_frame, style="Card.TFrame")
+        timer_frame.pack(fill="x", pady=(0, 15))
 
-        Label(timer_status_frame, 
-              text="●",
-              font=("Helvetica", 12),  # Increased from 10
-              foreground=self.colors['primary'],
-              background=self.colors['card_bg']).pack(side="left", padx=(0, 3))  # Increased padding
-              
-        self.timer_label = Label(timer_status_frame,
-                                text="00:00",
-                                font=("Helvetica", 28, "bold"),  # Increased from 24
-                                foreground=self.colors['text'],
+        # Timer display with "Remaining" on same line
+        timer_display_frame = Frame(timer_frame, style="Card.TFrame")
+        timer_display_frame.pack()
+        
+        self.timer_label = Label(timer_display_frame,
+                                text="00:00:00",
+                                font=("Helvetica", 28, "bold"),
+                                foreground=self.colors['timer_text'],
                                 background=self.colors['card_bg'])
-        self.timer_label.pack(side="left", padx=(0, 15))  # Increased padding
+        self.timer_label.pack(side="left")
 
-        Label(timer_status_frame, 
-              text="●",
-              font=("Helvetica", 12),  # Increased from 10
-              foreground=self.colors['info'],
-              background=self.colors['card_bg']).pack(side="left", padx=(0, 3))  # Increased padding
-              
-        self.status = Label(timer_status_frame,
-                           text="IDLE",
-                           style="Status.TLabel",
-                           foreground=self.colors['text'], # Ensure text color is white
-                           background=self.colors['card_bg']) # Ensure background is black
-        self.status.pack(side="left")
+        # "Remaining" label on same line as timer
+        remaining_label = Label(timer_display_frame,
+                               text="Remaining",
+                               font=("Helvetica", 12),
+                               foreground=self.colors['timer_label'],
+                               background=self.colors['card_bg'])
+        remaining_label.pack(side="left", padx=(10, 0))
 
-        # Right column - Controls
-        right_column = Frame(main_frame, style="Card.TFrame")
-        right_column.pack(side="right", fill="y")
+        # Controls section
+        controls_frame = Frame(main_frame, style="Card.TFrame")
+        controls_frame.pack(fill="x", pady=(0, 5))
 
-        # Start/Stop buttons in a single row
-        button_frame = Frame(right_column, style="Card.TFrame")
-        button_frame.pack(pady=(0, 10))  # Increased padding
+        # Start and Lock buttons (center-aligned)
+        button_frame = Frame(controls_frame, style="Card.TFrame")
+        button_frame.pack(fill="x", pady=(0, 10))
+        
+        # Center the buttons
+        button_container = Frame(button_frame, style="Card.TFrame")
+        button_container.pack(expand=True)
 
-        start_btn = RoundButton(button_frame,
+        start_btn = RoundButton(button_container,
                               text="START",
                               command=lambda: self.add_session(60),
                               bg=self.colors['primary'],
-                              fg="#000000",  # White text for visibility on colored button
-                              hover_bg="#8cc751",  # White text for visibility on colored button
-                              width=120,  # Increased from 100
-                              height=40)  # Increased from 35
-        start_btn.pack(side="left", padx=5, pady=0, expand=True, fill="both")  # Adjusted padding and added fill/expand
+                              fg="#FFFFFF",
+                              hover_bg=self.colors['secondary'],
+                              width=110,
+                              height=35)
+        start_btn.pack(side="left", padx=(0, 8))
 
-        stop_btn = RoundButton(button_frame,
-                             text="Lock",
+        lock_btn = RoundButton(button_container,
+                             text="LOCK",
                              command=self.end_session,
                              bg=self.colors['warning'],
-                             hover_bg="#950606",
-                             fg="#ffffff",  # White text for visibility on colored button
-                             width=120,  # Increased from 100
-                             height=40)  # Increased from 35
-        stop_btn.pack(side="left", padx=5, pady=0, expand=True, fill="both")  # Adjusted padding and added fill/expand
+                             hover_bg="#C62828",
+                             fg="#FFFFFF",
+                             width=110,
+                             height=35)
+        lock_btn.pack(side="left")
 
-        # Time controls in two columns
-        time_controls_frame = Frame(right_column, style="Card.TFrame")
-        time_controls_frame.pack(pady=8)  # Increased padding
+        # Time increment buttons (center-aligned, 3 buttons = 2 button space)
+        time_buttons_frame = Frame(controls_frame, style="Card.TFrame")
+        time_buttons_frame.pack(fill="x", pady=(5, 0))
+        
+        # Center the time buttons
+        time_container = Frame(time_buttons_frame, style="Card.TFrame")
+        time_container.pack(expand=True)
 
-        # First column (60 and 1 minutes)
-        col1_frame = Frame(time_controls_frame, style="Card.TFrame")
-        col1_frame.pack(side="left", padx=(0, 15))  # Increased padding between columns
+        # Each time button takes 1/3 of the space (same total width as 2 main buttons)
+        button_width = 75  # 3 * 75 = 225, same as 2 * 110 + 8 = 228
 
-        # 60 minutes controls
-        time_frame_60 = Frame(col1_frame, style="Card.TFrame")
-        time_frame_60.pack(pady=5)  # Increased padding between rows
+        # +1 MIN button
+        plus_1_btn = RoundButton(time_container,
+                               text="+1 MIN",
+                               command=lambda: self.add_session(1),
+                               bg=self.colors['info'],
+                               fg="#000000",
+                               hover_bg=self.colors['orange'],
+                               width=button_width,
+                               height=35)
+        plus_1_btn.pack(side="left", padx=(0, 5))
 
-        minus_btn1 = RoundButton(time_frame_60,
-                               text="-",
-                               command=lambda: self.subtract_session(60),
-                               bg=self.colors['warning'],
-                               hover_bg="#950606",
-                               fg="#ffffff",  # White text for visibility on colored button
-                               width=40,  # Increased from 30
-                               height=40)  # Increased from 30
-        minus_btn1.pack(side="left", padx=2, pady=0)  # Adjusted padding and added fill/expand
+        # +30 MIN button
+        plus_30_btn = RoundButton(time_container,
+                                text="+30 MIN",
+                                command=lambda: self.add_session(30),
+                                bg=self.colors['info'],
+                                fg="#000000",
+                                hover_bg=self.colors['orange'],
+                                width=button_width,
+                                height=35)
+        plus_30_btn.pack(side="left", padx=(0, 5))
 
-        time_label1 = Label(time_frame_60,
-                          text="60 min",
-                          font=("Helvetica", 14, "bold"),
-                          foreground=self.colors['text'],
-                          background=self.colors['card_bg'],
-                          width=8,
-                          anchor="center")  # Added anchor="center"
-        time_label1.pack(side="left", padx=2, pady=0, expand=True, fill="both")
-
-        plus_btn1 = RoundButton(time_frame_60,
-                              text="+",
-                              command=lambda: self.add_session(60),
-                              bg=self.colors['primary'],
-                                hover_bg="#8cc751",  # White text for visibility on colored button
-                              fg="#000000",  # White text for visibility on colored button
-                              width=40,  # Increased from 30
-                              height=40)  # Increased from 30
-        plus_btn1.pack(side="left", padx=2, pady=0)  # Adjusted padding and added fill/expand
-
-        # 1 minute controls
-        time_frame_1 = Frame(col1_frame, style="Card.TFrame")
-        time_frame_1.pack(pady=5)  # Increased padding between rows
-
-        minus_btn3 = RoundButton(time_frame_1,
-                               text="-",
-                               command=lambda: self.subtract_session(1),
-                               bg=self.colors['warning'],
-                                 hover_bg="#950606",
-                               fg="#ffffff",  # White text for visibility on colored button
-                               width=40,  # Increased from 30
-                               height=40)  # Increased from 30
-        minus_btn3.pack(side="left", padx=2, pady=0, expand=True, fill="both")  # Adjusted padding and added fill/expand
-
-        time_label3 = Label(time_frame_1,
-                          text="1 min",
-                          font=("Helvetica", 14, "bold"),
-                          foreground=self.colors['text'],
-                          background=self.colors['card_bg'],
-                          width=8,
-                          anchor="center")  # Added anchor="center"
-        time_label3.pack(side="left", padx=2, pady=0, expand=True, fill="both")
-
-        plus_btn3 = RoundButton(time_frame_1,
-                              text="+",
-                              command=lambda: self.add_session(1),
-                              bg=self.colors['primary'],
-                                hover_bg="#8cc751",  # White text for visibility on colored button
-                              fg="#000000",  # White text for visibility on colored button
-                              width=40,  # Increased from 30
-                              height=40)  # Increased from 30
-        plus_btn3.pack(side="left", padx=2, pady=0, expand=True, fill="both")  # Adjusted padding and added fill/expand
-
-        # Second column (30 minutes)
-        col2_frame = Frame(time_controls_frame, style="Card.TFrame")
-        col2_frame.pack(side="left", pady=5)  # Match the pady of time_frame_60
-
-        # 30 minutes controls
-        time_frame_30 = Frame(col2_frame, style="Card.TFrame")
-        time_frame_30.pack(pady=5)  # Remove pady to align with 60 minutes
-
-        minus_btn2 = RoundButton(time_frame_30,
-                               text="-",
-                               command=lambda: self.subtract_session(30),
-                               bg=self.colors['warning'],
-                                 hover_bg="#950606",
-                               fg="#ffffff",  # White text for visibility on colored button
-                               width=40,  # Increased from 30
-                               height=40)  # Increased from 30
-        minus_btn2.pack(side="left", padx=2, pady=0, expand=True, fill="both")  # Adjusted padding and added fill/expand
-
-        time_label2 = Label(time_frame_30,
-                          text="30 min",
-                          font=("Helvetica", 14, "bold"),
-                          foreground=self.colors['text'],
-                          background=self.colors['card_bg'],
-                          width=8,
-                          anchor="center")  # Added anchor="center"
-        time_label2.pack(side="left", padx=2, pady=0, expand=True, fill="both")
-
-        plus_btn2 = RoundButton(time_frame_30,
-                              text="+",
-                              command=lambda: self.add_session(30),
-                              bg=self.colors['primary'],
-                                hover_bg="#8cc751", # White text for visibility on colored button
-                              fg="#000000",  # White text for visibility on colored button
-                              width=40,  # Increased from 30
-                              height=40)  # Increased from 30
-        plus_btn2.pack(side="left", padx=2, pady=0, expand=True, fill="both")  # Adjusted padding and added fill/expand
+        # +60 MIN button
+        plus_60_btn = RoundButton(time_container,
+                                text="+60 MIN",
+                                command=lambda: self.add_session(60),
+                                bg=self.colors['info'],
+                                fg="#000000",
+                                hover_bg=self.colors['orange'],
+                                width=button_width,
+                                height=35)
+        plus_60_btn.pack(side="left")
 
         self.update_status("IDLE", connected=True)
 
-
     def update_timer(self):
         if self.remaining_time <= 0:
-            self.timer_label.configure(text="00:00")
+            self.timer_label.configure(text="00:00:00")
             self.timer_label.update()
+            self.update_status("IDLE", connected=True)  # Change to IDLE when timer reaches zero
             return
-        mins, secs = divmod(self.remaining_time, 60)
-        self.timer_label.configure(text=f"{mins:02d}:{secs:02d}")
+        hours, remainder = divmod(self.remaining_time, 3600)
+        mins, secs = divmod(remainder, 60)
+        self.timer_label.configure(text=f"{hours:02d}:{mins:02d}:{secs:02d}")
         self.timer_label.update()
         self.remaining_time -= 1
-        if self.remaining_time >= 0:  # Changed condition to include zero
+        if self.remaining_time >= 0:
             self.timer_label.after(1000, self.update_timer)
 
     def update_status(self, status, connected):
         if connected:
-            style = "Success.TLabel" if status == "ACTIVE" else "Error.TLabel"
+            if status == "ACTIVE":
+                style = "Error.TLabel"  # Red color for ACTIVE
+                text = "ACTIVE"
+            elif status == "IDLE":
+                style = "Error.TLabel"  # Red color for IDLE
+                text = "IDLE"
+            else:  # LOCKED
+                style = "Error.TLabel"
+                text = "LOCKED"
         else:
             style = "Error.TLabel"
-        self.status.configure(text=status.upper(), style=style)  # Convert status to uppercase
+            text = "DISCONNECTED"
+        self.status.configure(text=text, style=style)
+
+    def unlock_computer(self):
+        """Unlock the computer without a timer"""
+        self.server.send_command(self.sock, {"cmd": "unlock"})
+        self.update_status("ACTIVE", connected=True)
 
     def ask_duration(self):
         duration_win = Toplevel(self.master)
@@ -587,22 +613,22 @@ class ClientCard(Frame):
         self.update_status("ACTIVE", connected=True)
         self.remaining_time = max(0, self.remaining_time - minutes * 60)  # Ensure time doesn't go negative
         if self.remaining_time == 0:
-            self.timer_label.configure(text="00:00")
+            self.timer_label.configure(text="00:00:00")
             self.timer_label.update()
-            self.update_status("IDLE", connected=True)  # Update status when time reaches zero
+            self.update_status("IDLE", connected=True)  # Update status to IDLE when time reaches zero
 
     def end_session(self):
         self.server.send_command(self.sock, {"cmd": "end"})
-        self.update_status("IDLE", connected=True)
+        self.update_status("LOCKED", connected=True)
         self.remaining_time = 0
-        self.timer_label.configure(text="00:00")
+        self.timer_label.configure(text="00:00:00")
         self.timer_label.update()
 
     def lock_now(self):
         self.server.send_command(self.sock, {"cmd": "lock"})
 
     def disconnect(self):
-        self.update_status("Disconnected", connected=False)
+        self.update_status("DISCONNECTED", connected=False)
 
     def handle_extension_request(self, minutes):
         request_win = Toplevel(self.master)
@@ -701,7 +727,3 @@ class ClientCard(Frame):
                width=200,
                height=60)
         deny_btn.pack(side="left", padx=15)
-
-
-
-        
