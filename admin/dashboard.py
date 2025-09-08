@@ -19,6 +19,9 @@ class AdminDashboard(Frame):
         self.server.ui = self
         self.cards = {}
         
+        # Set the dashboard background to black
+        self.configure(style="Main.TFrame")
+        
         # New color palette based on design specifications
         self.colors = {
             'primary': '#4CAF50',    # Green for active/start buttons
@@ -27,14 +30,14 @@ class AdminDashboard(Frame):
             'background': '#1E1E1E', # Dark charcoal gray main background
             'text': '#FFFFFF',      # White main text
             'light_text': '#CCCCCC', # Light gray secondary text
-            'border': '#2A2A2A',    # Card border color
+            'border': '#1A1A1A',    # Light black card border color
             'success': '#4CAF50',   # Green for success/active
             'error': '#E53935',     # Red for error/locked
             'info': '#FFB300',      # Amber yellow for time buttons
             'purple': '#9b59b6',    # Purple for special actions
             'orange': '#FFA000',    # Darker amber for hover
-            'card_bg': '#2A2A2A',   # Slightly lighter gray for card background
-            'header_bg': '#1E1E1E', # Dark background for header
+            'card_bg': '#2A2A2A',   # Dark gray for card background
+            'header_bg': '#1E1E1E', # Dark charcoal gray background for header
             'header_text': '#FFFFFF', # White text for header
             'timer_text': '#FFFFFF', # White for timer numbers
             'timer_label': '#AAAAAA' # Light gray for "Remaining" label
@@ -42,6 +45,30 @@ class AdminDashboard(Frame):
 
         # Configure styles
         style = Style()
+        
+        # Main frame style
+        style.configure("Main.TFrame",
+                       background=self.colors['background'],
+                       relief="flat")
+        
+        # Scrollable frame style
+        style.configure("Scrollable.TFrame",
+                       background=self.colors['background'],
+                       relief="flat")
+        
+        # Cards frame style
+        style.configure("Cards.TFrame",
+                       background=self.colors['background'],
+                       relief="flat")
+        
+        # Black scrollbar style
+        style.configure("Black.Vertical.TScrollbar",
+                       background=self.colors['background'],
+                       troughcolor=self.colors['card_bg'],
+                       arrowcolor=self.colors['text'],
+                       bordercolor=self.colors['background'],
+                       darkcolor=self.colors['background'],
+                       lightcolor=self.colors['background'])
         
         # Header styles
         style.configure("Header.TFrame",
@@ -105,13 +132,19 @@ class AdminDashboard(Frame):
               style="HeaderInfo.TLabel").pack(side="left")
 
         # Main content area with scrollbar
-        self.main_frame = Frame(self)
+        self.main_frame = Frame(self, style="Main.TFrame")
         self.main_frame.pack(fill="both", expand=True)
 
         # Create canvas and scrollbar
-        self.canvas = tk.Canvas(self.main_frame, highlightthickness=0, bg=self.colors['background'])
-        self.scrollbar = tk.Scrollbar(self.main_frame, orient="vertical", command=self.canvas.yview)
-        self.scrollable_frame = Frame(self.canvas, style="Card.TFrame")
+        self.canvas = tk.Canvas(self.main_frame, highlightthickness=0, bg=self.colors['background'],
+                               highlightbackground=self.colors['background'],
+                               selectbackground=self.colors['background'])
+        
+        # Create scrollbar with ttkbootstrap styling for better control
+        from ttkbootstrap import Scrollbar
+        self.scrollbar = Scrollbar(self.main_frame, orient="vertical", command=self.canvas.yview,
+                                 style="Black.Vertical.TScrollbar")
+        self.scrollable_frame = Frame(self.canvas, style="Scrollable.TFrame")
 
         # Configure canvas
         self.scrollable_frame.bind(
@@ -126,6 +159,9 @@ class AdminDashboard(Frame):
             anchor="nw",
             width=self.canvas.winfo_width()
         )
+        
+        # Ensure the canvas has black background
+        self.canvas.configure(bg=self.colors['background'])
         
         # Bind window resize events for responsive behavior
         self.bind('<Configure>', self._on_window_resize)
@@ -144,7 +180,7 @@ class AdminDashboard(Frame):
         self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
 
         # Create a frame to hold the grid of cards
-        self.cards_frame = Frame(self.scrollable_frame, style="Card.TFrame")
+        self.cards_frame = Frame(self.scrollable_frame, style="Cards.TFrame")
         self.cards_frame.pack(fill="both", expand=True, padx=10, pady=10)
         
         # Configure grid columns to be responsive
@@ -161,7 +197,6 @@ class AdminDashboard(Frame):
         
         # Set initial responsive layout
         self.after(100, self._adjust_card_layout)
-
     def _on_canvas_configure(self, event):
         # Update the width of the frame to match the canvas
         self.canvas.itemconfig(self.canvas_frame, width=event.width)

@@ -23,7 +23,7 @@ def test_dashboard():
     root = tk.Tk()
     root.title("Golf Simulator Dashboard - Test")
     root.geometry("1400x900")
-    root.configure(bg="#1E1E1E")
+    root.configure(bg="#000000")
     
     # Create mock server
     mock_server = MockServer()

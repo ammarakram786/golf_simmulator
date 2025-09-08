@@ -64,7 +64,7 @@ root.title("Golf Simulator Admin Dashboard")
 root.geometry("1400x900")  # Increased size for better visibility
 
 # Add window icon and configure window properties
-root.configure(bg="#1E1E1E")  # Dark background
+root.configure(bg="#1E1E1E")  # Dark charcoal gray background
 root.attributes('-alpha', 0.98)  # Slight transparency for modern look
 
 # Load configuration

@@ -85,13 +85,13 @@ class ClientCard(Frame):
             'background': '#1E1E1E', # Dark charcoal gray main background
             'text': '#FFFFFF',      # White main text
             'light_text': '#CCCCCC', # Light gray secondary text
-            'border': '#2A2A2A',    # Card border color
+            'border': '#2A2A2A',    # Dark gray card border color
             'success': '#4CAF50',   # Green for success/active
             'error': '#E53935',     # Red for error/locked
             'info': '#FFB300',      # Amber yellow for time buttons
             'purple': '#9b59b6',    # Purple for special actions
             'orange': '#FFA000',    # Darker amber for hover
-            'card_bg': '#2A2A2A',   # Slightly lighter gray for card background
+            'card_bg': '#2A2A2A',   # Dark gray for card background
             'timer_text': '#FFFFFF', # White for timer numbers
             'timer_label': '#AAAAAA' # Light gray for "Remaining" label
         }
@@ -103,7 +103,7 @@ class ClientCard(Frame):
         style.configure("Card.TFrame",
                        background=self.colors['card_bg'],
                        relief="flat",
-                       borderwidth=1)
+                       borderwidth=0)
         
         # Create a custom rounded frame
         self.configure(style="Card.TFrame", padding=20)
@@ -225,7 +225,7 @@ class ClientCard(Frame):
         timer_frame = Frame(main_frame, style="Card.TFrame")
         timer_frame.pack(fill="x", pady=(0, 15))
 
-        # Timer display with "Remaining" on same line
+        # Timer display centered
         timer_display_frame = Frame(timer_frame, style="Card.TFrame")
         timer_display_frame.pack()
         
@@ -234,15 +234,15 @@ class ClientCard(Frame):
                                 font=("Helvetica", 28, "bold"),
                                 foreground=self.colors['timer_text'],
                                 background=self.colors['card_bg'])
-        self.timer_label.pack(side="left")
+        self.timer_label.pack()
 
-        # "Remaining" label on same line as timer
+        # "Remaining" label centered below timer
         remaining_label = Label(timer_display_frame,
                                text="Remaining",
                                font=("Helvetica", 12),
                                foreground=self.colors['timer_label'],
                                background=self.colors['card_bg'])
-        remaining_label.pack(side="left", padx=(10, 0))
+        remaining_label.pack()
 
         # Controls section
         controls_frame = Frame(main_frame, style="Card.TFrame")
@@ -262,9 +262,9 @@ class ClientCard(Frame):
                               bg=self.colors['primary'],
                               fg="#FFFFFF",
                               hover_bg=self.colors['secondary'],
-                              width=110,
-                              height=35)
-        start_btn.pack(side="left", padx=(0, 8))
+                              width=130,
+                              height=45)
+        start_btn.pack(side="left", padx=(0, 10))
 
         lock_btn = RoundButton(button_container,
                              text="LOCK",
@@ -272,8 +272,8 @@ class ClientCard(Frame):
                              bg=self.colors['warning'],
                              hover_bg="#C62828",
                              fg="#FFFFFF",
-                             width=110,
-                             height=35)
+                             width=130,
+                             height=45)
         lock_btn.pack(side="left")
 
         # Time increment buttons (center-aligned, 3 buttons = 2 button space)
@@ -285,7 +285,8 @@ class ClientCard(Frame):
         time_container.pack(expand=True)
 
         # Each time button takes 1/3 of the space (same total width as 2 main buttons)
-        button_width = 75  # 3 * 75 = 225, same as 2 * 110 + 8 = 228
+        # 2 main buttons: 130 + 10 + 130 = 270, so each timer button = 270/3 = 90
+        button_width = 90  # 3 * 90 = 270, same as 2 * 130 + 10 = 270
 
         # +1 MIN button
         plus_1_btn = RoundButton(time_container,
@@ -295,7 +296,7 @@ class ClientCard(Frame):
                                fg="#000000",
                                hover_bg=self.colors['orange'],
                                width=button_width,
-                               height=35)
+                               height=45)
         plus_1_btn.pack(side="left", padx=(0, 5))
 
         # +30 MIN button
@@ -306,7 +307,7 @@ class ClientCard(Frame):
                                 fg="#000000",
                                 hover_bg=self.colors['orange'],
                                 width=button_width,
-                                height=35)
+                                height=45)
         plus_30_btn.pack(side="left", padx=(0, 5))
 
         # +60 MIN button
@@ -317,7 +318,7 @@ class ClientCard(Frame):
                                 fg="#000000",
                                 hover_bg=self.colors['orange'],
                                 width=button_width,
-                                height=35)
+                                height=45)
         plus_60_btn.pack(side="left")
 
         self.update_status("IDLE", connected=True)
