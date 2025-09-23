@@ -5,20 +5,6 @@ from ttkbootstrap import Style
 
 
 class RoundButton(tk.Canvas):
-    def __init__(self, parent, text, command=None, width=200, height=60, bg="#2ecc71", fg="#000000", hover_bg=None, **kwargs):
-        """
-        Darken a hex color by a given amount (0-1).
-        """
-        color = color.lstrip('#')
-        if len(color) == 3:
-            color = ''.join([c*2 for c in color])
-        r = int(color[0:2], 16)
-        g = int(color[2:4], 16)
-        b = int(color[4:6], 16)
-        r = max(0, int(r * (1 - amount)))
-        g = max(0, int(g * (1 - amount)))
-        b = max(0, int(b * (1 - amount)))
-        return f'#{r:02x}{g:02x}{b:02x}'
 
     def __init__(self, parent, text, command=None, width=200, height=60, bg="#2ecc71", fg="#000000", hover_bg=None, **kwargs):
         super().__init__(parent, width=width, height=height, highlightthickness=0, **kwargs)
