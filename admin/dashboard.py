@@ -19,27 +19,56 @@ class AdminDashboard(Frame):
         self.server.ui = self
         self.cards = {}
         
-        # Minty theme colors with additional colors
+        # Set the dashboard background to black
+        self.configure(style="Main.TFrame")
+        
+        # New color palette based on design specifications
         self.colors = {
-            'primary': '#2ecc71',    # Mint green
-            'secondary': '#27ae60',  # Darker mint
-            'warning': '#e74c3c',    # Red for warning
-            'background': '#ffffff', # White
-            'text': '#2c3e50',      # Dark blue-gray
-            'light_text': '#ffffff', # White text
-            'border': '#e0e0e0',    # Light gray for borders
-            'success': '#2ecc71',   # Green for success
-            'error': '#e74c3c',     # Red for error
-            'info': '#3498db',      # Blue for info
+            'primary': '#4CAF50',    # Green for active/start buttons
+            'secondary': '#43A047',  # Darker green for hover
+            'warning': '#E53935',    # Red for lock/error
+            'background': '#1E1E1E', # Dark charcoal gray main background
+            'text': '#FFFFFF',      # White main text
+            'light_text': '#CCCCCC', # Light gray secondary text
+            'border': '#1A1A1A',    # Light black card border color
+            'success': '#4CAF50',   # Green for success/active
+            'error': '#E53935',     # Red for error/locked
+            'info': '#FFB300',      # Amber yellow for time buttons
             'purple': '#9b59b6',    # Purple for special actions
-            'orange': '#e67e22',    # Orange for warnings
-            'card_bg': '#f8f9fa',   # Light gray for card background
-            'header_bg': '#1a1a1a', # Dark background for header
-            'header_text': '#ffffff' # White text for header
+            'orange': '#FFA000',    # Darker amber for hover
+            'card_bg': '#2A2A2A',   # Dark gray for card background
+            'header_bg': '#1E1E1E', # Dark charcoal gray background for header
+            'header_text': '#FFFFFF', # White text for header
+            'timer_text': '#FFFFFF', # White for timer numbers
+            'timer_label': '#AAAAAA' # Light gray for "Remaining" label
         }
 
         # Configure styles
         style = Style()
+        
+        # Main frame style
+        style.configure("Main.TFrame",
+                       background=self.colors['background'],
+                       relief="flat")
+        
+        # Scrollable frame style
+        style.configure("Scrollable.TFrame",
+                       background=self.colors['background'],
+                       relief="flat")
+        
+        # Cards frame style
+        style.configure("Cards.TFrame",
+                       background=self.colors['background'],
+                       relief="flat")
+        
+        # Black scrollbar style
+        style.configure("Black.Vertical.TScrollbar",
+                       background=self.colors['background'],
+                       troughcolor=self.colors['card_bg'],
+                       arrowcolor=self.colors['text'],
+                       bordercolor=self.colors['background'],
+                       darkcolor=self.colors['background'],
+                       lightcolor=self.colors['background'])
         
         # Header styles
         style.configure("Header.TFrame",
@@ -80,10 +109,10 @@ class AdminDashboard(Frame):
               text="Golf Simulator Dashboard",
               style="HeaderTitle.TLabel").pack(side="left")
 
-        # Subtitle with current time
-        Label(title_frame,
-              text="Admin Control Panel",
-              style="HeaderSubtitle.TLabel").pack(side="left", padx=(10, 0))
+        # # Subtitle with current time
+        # Label(title_frame,
+        #       text="Admin Control Panel",
+        #       style="HeaderSubtitle.TLabel").pack(side="left", padx=(10, 0))
 
         # Right side of header (Server Info)
         info_frame = Frame(header_frame, style="Header.TFrame")
@@ -103,13 +132,19 @@ class AdminDashboard(Frame):
               style="HeaderInfo.TLabel").pack(side="left")
 
         # Main content area with scrollbar
-        self.main_frame = Frame(self)
+        self.main_frame = Frame(self, style="Main.TFrame")
         self.main_frame.pack(fill="both", expand=True)
 
         # Create canvas and scrollbar
-        self.canvas = tk.Canvas(self.main_frame, highlightthickness=0, bg=self.colors['background'])
-        self.scrollbar = tk.Scrollbar(self.main_frame, orient="vertical", command=self.canvas.yview)
-        self.scrollable_frame = Frame(self.canvas, style="Card.TFrame")
+        self.canvas = tk.Canvas(self.main_frame, highlightthickness=0, bg=self.colors['background'],
+                               highlightbackground=self.colors['background'],
+                               selectbackground=self.colors['background'])
+        
+        # Create scrollbar with ttkbootstrap styling for better control
+        from ttkbootstrap import Scrollbar
+        self.scrollbar = Scrollbar(self.main_frame, orient="vertical", command=self.canvas.yview,
+                                 style="Black.Vertical.TScrollbar")
+        self.scrollable_frame = Frame(self.canvas, style="Scrollable.TFrame")
 
         # Configure canvas
         self.scrollable_frame.bind(
@@ -125,8 +160,13 @@ class AdminDashboard(Frame):
             width=self.canvas.winfo_width()
         )
         
+        # Ensure the canvas has black background
+        self.canvas.configure(bg=self.colors['background'])
+        
         # Bind window resize events for responsive behavior
         self.bind('<Configure>', self._on_window_resize)
+        # Also bind to the root window for better resize detection
+        self.master.bind('<Configure>', self._on_root_resize)
 
         # Make the canvas expand to fill the frame
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
@@ -140,27 +180,23 @@ class AdminDashboard(Frame):
         self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
 
         # Create a frame to hold the grid of cards
-        self.cards_frame = Frame(self.scrollable_frame, style="Card.TFrame")
+        self.cards_frame = Frame(self.scrollable_frame, style="Cards.TFrame")
         self.cards_frame.pack(fill="both", expand=True, padx=10, pady=10)
         
-        # Configure grid columns to have equal weight and be responsive
-        # Maximum 2 columns with minimum size to ensure all buttons and content are visible
-        self.cards_frame.grid_columnconfigure(0, weight=1, minsize=400)
-        self.cards_frame.grid_columnconfigure(1, weight=1, minsize=400)
+        # Configure grid columns to be responsive
+        # Will be updated dynamically based on window size
+        for i in range(5):  # Maximum 5 columns
+            self.cards_frame.grid_columnconfigure(i, weight=1, minsize=420)
         
         # Configure grid rows to be responsive
-        self.cards_frame.grid_rowconfigure(0, weight=1)
-        self.cards_frame.grid_rowconfigure(1, weight=1)
-        self.cards_frame.grid_rowconfigure(2, weight=1)
-        self.cards_frame.grid_rowconfigure(3, weight=1)
-        self.cards_frame.grid_rowconfigure(4, weight=1)
+        for i in range(10):  # Support up to 10 rows
+            self.cards_frame.grid_rowconfigure(i, weight=1)
 
         # Start time update
         self.update_time()
         
         # Set initial responsive layout
         self.after(100, self._adjust_card_layout)
-
     def _on_canvas_configure(self, event):
         # Update the width of the frame to match the canvas
         self.canvas.itemconfig(self.canvas_frame, width=event.width)
@@ -171,8 +207,15 @@ class AdminDashboard(Frame):
         if event.width > 1:  # Avoid invalid resize events
             self.canvas.itemconfig(self.canvas_frame, width=event.width - 50)  # Account for scrollbar
             
-            # Rearrange cards to fit new layout
-            self._adjust_card_layout()
+            # Rearrange cards to fit new layout after a short delay to avoid excessive updates
+            self.after(100, self._adjust_card_layout)
+    
+    def _on_root_resize(self, event):
+        """Handle root window resize events for responsive layout"""
+        # Only respond to root window resize events
+        if event.widget == self.master and event.width > 1:
+            # Rearrange cards to fit new layout after a short delay
+            self.after(150, self._adjust_card_layout)
             
     def _adjust_card_layout(self):
         """Adjust card layout based on current window size"""
@@ -183,17 +226,38 @@ class AdminDashboard(Frame):
         window_width = self.winfo_width()
         
         # Determine number of columns based on window width
-        # Maximum of 2 columns to ensure proper card visibility
-        if window_width < 900:
-            # Small window: single column (minimum 400px width)
+        # Card minimum width is 420px, with 20px padding between cards
+        min_card_width = 420
+        padding = 20
+        
+        if window_width < 800:
+            # Small window: single column
             columns = 1
-            card_width = max(400, window_width - 100)  # Account for padding and scrollbar
-        else:
-            # Medium and large windows: maximum 2 columns (minimum 400px each)
+            card_width = max(min_card_width, window_width - 100)
+        elif window_width < 1200:
+            # Medium window: 2 columns
             columns = 2
-            card_width = max(400, (window_width - 100) // 2)
+            card_width = max(min_card_width, (window_width - 100) // 2)
+        elif window_width < 1600:
+            # Large window: 3 columns
+            columns = 3
+            card_width = max(min_card_width, (window_width - 100) // 3)
+        elif window_width < 2000:
+            # Extra large window: 4 columns
+            columns = 4
+            card_width = max(min_card_width, (window_width - 100) // 4)
+        else:
+            # Very large window: 5 columns maximum
+            columns = 5
+            card_width = max(min_card_width, (window_width - 100) // 5)
             
-        # Update grid configuration with proper minimum sizes
+        # print(f"Window width: {window_width}, Columns: {columns}, Card width: {card_width}")  # Debug output
+            
+        # Clear all existing grid configurations
+        for i in range(10):  # Reset all columns
+            self.cards_frame.grid_columnconfigure(i, weight=0, minsize=0)
+            
+        # Update grid configuration with proper minimum sizes for active columns
         for i in range(columns):
             self.cards_frame.grid_columnconfigure(i, weight=1, minsize=card_width)
             
@@ -208,6 +272,10 @@ class AdminDashboard(Frame):
         # Sort cards alphabetically
         sorted_cards = sorted(self.cards.items(), key=lambda x: x[1].name.upper())
         
+        # First, remove all cards from grid
+        for addr, card in self.cards.items():
+            card.grid_remove()
+        
         # Position cards in responsive grid with proper sizing
         for index, (addr, card) in enumerate(sorted_cards):
             row = index // columns
@@ -217,8 +285,8 @@ class AdminDashboard(Frame):
             # Ensure card maintains minimum size for visibility
             card.grid_propagate(False)  # Prevent card from shrinking
             
-        # Update scroll region
-        self._on_frame_configure()
+        # Update scroll region after a short delay to ensure layout is complete
+        self.after(50, self._on_frame_configure)
 
     def _on_mousewheel(self, event):
         self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
