@@ -251,7 +251,7 @@ class AdminDashboard(Frame):
             columns = 5
             card_width = max(min_card_width, (window_width - 100) // 5)
             
-        # print(f"Window width: {window_width}, Columns: {columns}, Card width: {card_width}")  # Debug output
+        
             
         # Clear all existing grid configurations
         for i in range(10):  # Reset all columns
