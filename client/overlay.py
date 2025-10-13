@@ -270,8 +270,7 @@ class SessionOverlay:
         self.running = False
         self.win.withdraw()  # Hide the small timer window
 
-        # Immediately lock workstation and block input
-        # subprocess.call("rundll32.exe user32.dll,LockWorkStation")
+        # Block input and show custom lock screen
         block_input(True)
         # Call the internal method to show the lock screen overlay
         self._show_lock_screen()

@@ -80,6 +80,8 @@ class ClientCard(Frame):
         super().__init__(master, padding=20)
         self.name, self.ip, self.sock, self.server = name, ip, sock, server
         self.remaining_time = 0
+        self.total_time_seconds = 0  # Track total time for this card
+        self.load_card_total_time()  # Load saved total time for this card
 
         # New color palette based on design specifications
         self.colors = {
@@ -223,7 +225,38 @@ class ClientCard(Frame):
                         font=("Helvetica", 12),
                         foreground=self.colors['light_text'],
                         background=self.colors['card_bg'])
-        ip_label.pack(anchor="w", pady=(0, 15))
+        ip_label.pack(anchor="w", pady=(0, 5))
+
+        # Total time section below IP
+        total_time_frame = Frame(main_frame, style="Card.TFrame")
+        total_time_frame.pack(anchor="w", pady=(0, 15))
+
+        # "Total Time" label
+        total_label = Label(total_time_frame,
+                           text="Total Time:",
+                           font=("Helvetica", 10),
+                           foreground=self.colors['timer_label'],
+                           background=self.colors['card_bg'])
+        total_label.pack(side="left")
+
+        # Total time display
+        self.total_time_label = Label(total_time_frame,
+                                    text="00:00:00",
+                                    font=("Helvetica", 14, "bold"),
+                                    foreground=self.colors['info'],
+                                    background=self.colors['card_bg'])
+        self.total_time_label.pack(side="left", padx=(5, 0))
+
+        # Reset total time button
+        reset_total_btn = RoundButton(total_time_frame,
+                                    text="RESET",
+                                    command=self.reset_card_total_time,
+                                    bg=self.colors['warning'],
+                                    fg="#FFFFFF",
+                                    hover_bg="#C62828",
+                                    width=50,
+                                    height=20)
+        reset_total_btn.pack(side="left", padx=(10, 0))
 
         # Timer section
         timer_frame = Frame(main_frame, style="Card.TFrame")
@@ -324,6 +357,9 @@ class ClientCard(Frame):
                                 width=button_width,
                                 height=45)
         plus_60_btn.pack(side="left")
+
+        # Update total time display after UI is created
+        self.update_card_total_time_display()
 
         self.update_status("IDLE", connected=True)
 
@@ -605,6 +641,9 @@ class ClientCard(Frame):
         self.update_status("ACTIVE", connected=True)
         self.remaining_time = minutes * 60  # Set the time directly
         self.update_timer()  # Start the timer
+        
+        # Add to this card's total time
+        self.add_to_card_total_time(minutes)
 
     def add_session(self, minutes):
         self.server.send_command(self.sock, {"cmd": "add", "minutes": minutes})
@@ -612,6 +651,9 @@ class ClientCard(Frame):
         self.remaining_time += minutes * 60
         if self.remaining_time == minutes * 60:  # If this is the first time being set
             self.update_timer()  # Start the timer
+        
+        # Add to this card's total time
+        self.add_to_card_total_time(minutes)
 
     def subtract_session(self, minutes):
         self.server.send_command(self.sock, {"cmd": "sub", "minutes": minutes})
@@ -732,3 +774,47 @@ class ClientCard(Frame):
                width=200,
                height=60)
         deny_btn.pack(side="left", padx=15)
+
+    def add_to_card_total_time(self, minutes):
+        """Add minutes to this card's total time and update display"""
+        self.total_time_seconds += minutes * 60
+        self.update_card_total_time_display()
+        self.save_card_total_time()
+
+    def reset_card_total_time(self):
+        """Reset this card's total time to zero"""
+        self.total_time_seconds = 0
+        self.update_card_total_time_display()
+        self.save_card_total_time()
+
+    def update_card_total_time_display(self):
+        """Update this card's total time display label"""
+        hours, remainder = divmod(self.total_time_seconds, 3600)
+        mins, secs = divmod(remainder, 60)
+        self.total_time_label.configure(text=f"{hours:02d}:{mins:02d}:{secs:02d}")
+
+    def save_card_total_time(self):
+        """Save this card's total time to file"""
+        try:
+            import json
+            import os
+            filename = f"card_total_time_{self.name.replace(' ', '_')}.json"
+            data = {"total_time_seconds": self.total_time_seconds}
+            with open(filename, "w") as f:
+                json.dump(data, f)
+        except Exception as e:
+            print(f"Error saving card total time: {e}")
+
+    def load_card_total_time(self):
+        """Load this card's total time from file"""
+        try:
+            import json
+            import os
+            filename = f"card_total_time_{self.name.replace(' ', '_')}.json"
+            if os.path.exists(filename):
+                with open(filename, "r") as f:
+                    data = json.load(f)
+                    self.total_time_seconds = data.get("total_time_seconds", 0)
+        except Exception as e:
+            print(f"Error loading card total time: {e}")
+            self.total_time_seconds = 0
